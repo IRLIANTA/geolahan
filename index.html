@@ -47,7 +47,7 @@ button{cursor:pointer}button:hover{border-color:var(--g)}
 .split{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px}
 table{width:100%;border-collapse:collapse}th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);padding:8px;border-bottom:1px solid var(--line)}
 td{padding:10px 8px;border-bottom:1px solid #232823;vertical-align:top}td small{color:var(--mut)}
-.act{display:flex;gap:4px}.act button{padding:3px 8px;font-size:12px}
+.act{display:flex;gap:4px;flex-wrap:wrap}.act button{padding:3px 8px;font-size:12px}
 .tag{font-size:11px;padding:2px 9px;border-radius:99px;background:#34c26b22;color:var(--g)}.tag.d{background:#ffffff14;color:#cfd6cf}.tag.s{background:var(--w);color:var(--k)}
 .mapbox{position:sticky;top:20px;height:calc(100vh - 220px);min-height:340px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
 #map{height:100%}
@@ -65,6 +65,15 @@ textarea{font-family:ui-monospace,Consolas,monospace;font-size:12px}
 #drawbar .rw{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}#drawbar button,#drawbar select{padding:4px 10px;font-size:12px}
 .vx{background:#fff;border:3px solid var(--g);border-radius:50%;box-sizing:border-box}
 .leaflet-container.drawing{cursor:crosshair}.drawing path.leaflet-interactive{pointer-events:none}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:1px solid #232823}.kv span{color:var(--mut)}.kv b{text-align:right;font-weight:600;word-break:break-word}
+.big{font-size:34px;font-weight:700;color:var(--g);line-height:1.1}.abox{background:#141714;border:1px solid var(--line);border-radius:10px;padding:10px 12px}.abox span{color:var(--mut);font-size:12px}.abox .big{font-size:26px;margin-top:2px}
+.big small{font-size:14px;color:var(--mut);font-weight:400}
+#ph{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px;margin-top:12px}.fig{margin:0}
+.fig img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px;cursor:zoom-in;background:#222}
+.fig figcaption{font-size:11px;color:var(--mut);display:flex;justify-content:space-between;gap:4px;align-items:center;margin-top:3px}.fig button{padding:1px 6px;font-size:11px}
+input[type=file]::file-selector-button{background:var(--g);color:var(--k);border:0;border-radius:6px;padding:5px 10px;margin-right:8px;font-weight:600;cursor:pointer}
+#lb{position:fixed;inset:0;z-index:5000;background:#000d;display:grid;place-items:center;cursor:zoom-out}#lb img{max-width:94vw;max-height:92vh;border-radius:8px}
+pre.co{background:#111411;border:1px solid var(--line);border-radius:8px;padding:10px;max-height:200px;overflow:auto;font-size:12px;margin:8px 0 0}
 @media(max-width:900px){#shell{grid-template-columns:1fr}#side{position:fixed;z-index:2000;left:-260px;width:250px;transition:.2s}#side.open{left:0}
 #top{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--side);border-bottom:1px solid var(--line)}
 #main{padding:18px 16px}.hero,.split,.g3,.g2{grid-template-columns:1fr}.hero h1{font-size:30px}.mapbox{position:relative;height:360px}}
@@ -124,7 +133,7 @@ function toTxt(k,g){
 }
 const fromRow=r=>({id:String(r.id),nama:r.nama,desa:r.desa||'',status:r.status,ket:r.ket||'',
   txt:r.kind==='tin'?(r.titik_tin?.coordinates||[]).map(ll).join('\n'):toTxt(r.kind,r.geom),
-  sub:r.kind==='multi'?r.geom.type:undefined});
+  sub:r.kind==='multi'?r.geom.type:undefined,luas_ha:+r.luas_ha,panjang_m:+r.panjang_m,keliling_m:+r.keliling_m,dibuat:r.created_at,diubah:r.updated_at});
 const pr=c=>c.join(' ');
 function wkt(g){switch(g.type){
  case'Point':return`POINT(${pr(g.coordinates)})`;
@@ -181,9 +190,10 @@ function build(k,sub,txt){
   return G.every(g=>g.length>=3)?{type:'MultiPolygon',coordinates:G.map(g=>[ring(g)])}:null;
 }
 const fm=v=>v.toLocaleString('id-ID',{maximumFractionDigits:2});
+const fh=v=>v.toLocaleString('id-ID',{maximumFractionDigits:4});
 function ukur(k,g){
-  if(k==='tin'){const a=g.features.reduce((s,f)=>s+turf.area(f),0)/1e4;return`${g.features.length} segitiga · ${fm(a)} ha`}
-  if(/Polygon/.test(g.type)){return fm(turf.area(turf.feature(g))/1e4)+' ha'}
+  if(k==='tin'){const a=g.features.reduce((s,f)=>s+turf.area(f),0);return`${g.features.length} segitiga · ${fm(a)} m² · ${fh(a/1e4)} ha`}
+  if(/Polygon/.test(g.type)){const a=turf.area(turf.feature(g));return fm(a)+' m² · '+fh(a/1e4)+' ha'}
   if(/Line/.test(g.type))return fm(turf.length(turf.feature(g))*1000)+' m';
   return(g.type==='Point'?1:g.coordinates.length)+' titik';
 }
@@ -192,11 +202,11 @@ const sc=s=>s==='Selesai'?'tag s':s==='Draft'?'tag d':'tag';
 /* router */
 let M=null,cur='';
 function route(){
-  const k=(location.hash||'#beranda').slice(1);cur=C[k]?k:(k==='about'?'about':'beranda');
+  const[k,did]=(location.hash||'#beranda').slice(1).split('/');DET=null;cur=C[k]?k:(k==='about'?'about':'beranda');
   $('#nav').innerHTML=NAV.map(n=>n[0]==='g'?`<div class="grp">${n[1]}</div>`:`<a href="#${n[0]}" class="${n[0]===cur?'on':''}"><i>${n[2]}</i>${n[1]}</a>`).join('');
   $('#side').classList.remove('open');draft=null;pin=null;dShapes=dMarks=null;if(M){M.remove();M=null}
-  $('#main').innerHTML=cur==='beranda'?home():cur==='about'?about():crudPage(cur);
-  if(C[cur])initMap();window.scrollTo(0,0);
+  $('#main').innerHTML=cur==='beranda'?home():cur==='about'?about():did?detailPage(cur,did):crudPage(cur);
+  if(DET)initDetail();else if(C[cur])initMap();window.scrollTo(0,0);
 }
 addEventListener('hashchange',()=>ready&&route());
 
@@ -215,15 +225,15 @@ function home(){
   <p style="max-width:520px">Gambar batas lahan, ukur luas, rekam jalur lapangan, dan kelola seluruh data spasial dalam satu panel admin.</p>
   <div style="display:flex;gap:10px;margin-top:18px"><a class="pri" style="padding:9px 18px;border-radius:8px" href="#polygon">Mulai Mapping</a><a class="out" style="padding:9px 18px;border-radius:8px;border:1px solid var(--line)" href="#about">Pelajari</a></div></div>
   <div class="card white" style="display:flex;flex-direction:column;justify-content:space-between"><div><div class="eyebrow" style="color:var(--gd)">Ringkasan</div><div class="num">${all.length}</div><p>objek spasial tersimpan</p></div>
-  <div><div class="num">${fm(luas)} <small style="font-size:14px">ha</small></div><p style="margin:0">total luas terpetakan</p></div></div></div>
+  <div><div class="num">${fm(luas*1e4)} <small style="font-size:14px">m²</small></div><div class="num" style="font-size:22px">${fh(luas)} <small style="font-size:14px">ha</small></div><p style="margin:0">total luas terpetakan</p></div></div></div>
   <h2>Statistik pemetaan</h2><div class="grid g3" style="margin-bottom:22px">
   ${card('⬠',by('polygon').length,'Jumlah polygon lahan','#polygon')}
   ${card('⌂',desa.length,'Desa yang dipetakan')}
-  ${card('▦',fm(luas)+' ha','Total luas lahan')}
+  ${card('▦',fm(luas*1e4)+' m²','Total luas lahan ('+fh(luas)+' ha)')}
   ${card('●',by('point').length,'Titik lokasi (patok, sampel)','#point')}
   ${card('╱',fm(pj)+' m','Total panjang jalur & jalan','#line')}
   ${card('✓',done+' / '+all.length,'Laporan berstatus selesai')}</div>
-  <div class="grid g2"><div class="card"><h2>Sebaran per desa</h2><table><tr><th>Desa</th><th>Objek</th><th>Luas</th></tr>${Object.entries(pd).sort((a,b)=>b[1].n-a[1].n).map(([d,v])=>`<tr><td>${esc(d)}</td><td>${v.n}</td><td>${fm(v.ha)} ha</td></tr>`).join('')}</table></div>
+  <div class="grid g2"><div class="card"><h2>Sebaran per desa</h2><table><tr><th>Desa</th><th>Objek</th><th>Luas (m²)</th><th>Luas (ha)</th></tr>${Object.entries(pd).sort((a,b)=>b[1].n-a[1].n).map(([d,v])=>`<tr><td>${esc(d)}</td><td>${v.n}</td><td>${fm(v.ha*1e4)}</td><td>${fh(v.ha)}</td></tr>`).join('')}</table></div>
   <div class="card"><h2>Data terbaru</h2><table><tr><th>Nama</th><th>Modul</th><th>Status</th></tr>${all.slice(-6).reverse().map(x=>`<tr><td>${esc(x.nama)}<br><small>${esc(x.desa||'')}</small></td><td>${C[x.k].t}</td><td><span class="${sc(x.status)}">${esc(x.status)}</span></td></tr>`).join('')}</table></div></div>`;
 }
 function about(){
@@ -242,10 +252,7 @@ function crudPage(k){
 }
 let grp;
 function initMap(){
-  M=L.map('map',{center:[-0.03,109.345],zoom:14});
-  const e=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'}).addTo(M);
-  const o=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OSM'});
-  L.control.layers({Satelit:e,Peta:o}).addTo(M);grp=L.featureGroup().addTo(M);list(true);
+  M=mkMap();grp=L.featureGroup().addTo(M);list(true);
   M.on('click',ev=>draft&&addV(ev.latlng));
   ['#mtool','#drawbar'].forEach(q=>L.DomEvent.disableClickPropagation($(q)));L.DomEvent.disableScrollPropagation($('#mres'));
   $('#mq').addEventListener('keydown',ev=>ev.key==='Enter'&&cari());
@@ -256,12 +263,107 @@ function list(fit){
   $('#cnt').textContent=d.length+' data';grp.clearLayers();
   d.forEach(x=>{const g=build(k,x.sub,x.txt);if(!g)return;x._g=g;
     const l=L.geoJSON(g,{style:{color:'#34c26b',weight:3,fillOpacity:.25},pointToLayer:(_,ll)=>L.circleMarker(ll,{radius:7,color:'#fff',fillColor:'#34c26b',fillOpacity:1})});
-    l.bindPopup(`<b>${esc(x.nama)}</b><br>${ukur(k,g)}`);l.rid=x.id;grp.addLayer(l);
+    l.bindPopup(`<b>${esc(x.nama)}</b><br>${ukur(k,g)}<br><a href="#${k}/${x.id}" style="color:#1b8f4c;font-weight:600">Lihat detail →</a>`);l.rid=x.id;grp.addLayer(l);
     if(k==='tin')L.geoJSON(x.txt?turf.featureCollection(parse(x.txt).flat().map(p=>turf.point(p))):[],{pointToLayer:(_,ll)=>L.circleMarker(ll,{radius:4,color:'#fff',fillColor:'#fff',fillOpacity:1})}).addTo(grp)});
-  $('#tb').innerHTML=d.length?`<table><tr><th>Nama</th><th>Ukuran</th><th></th></tr>${d.map(x=>`<tr><td><b>${esc(x.nama)}</b><br><small>${esc(x.desa?x.desa+' · ':'')}${esc(x.sub?x.sub+' · ':'')}${esc(x.ket)}</small><br><span class="${sc(x.status)}">${esc(x.status)}</span></td><td>${x._g?ukur(k,x._g):'-'}</td><td><div class="act"><button onclick="zoom('${x.id}')">Lihat</button><button onclick="openF('${x.id}')">Edit</button><button class="dgr" onclick="del('${x.id}')">Hapus</button></div></td></tr>`).join('')}</table>`:'<div class="empty">Belum ada data. Klik “+ Tambah”.</div>';
+  $('#tb').innerHTML=d.length?`<table><tr><th>Nama</th><th>Ukuran</th><th></th></tr>${d.map(x=>`<tr onclick="zoom('${x.id}')" style="cursor:pointer"><td><b>${esc(x.nama)}</b><br><small>${esc(x.desa?x.desa+' · ':'')}${esc(x.sub?x.sub+' · ':'')}${esc(x.ket)}</small><br><span class="${sc(x.status)}">${esc(x.status)}</span></td><td>${x._g?ukur(k,x._g):'-'}</td><td><div class="act" onclick="event.stopPropagation()"><button onclick="location.hash='#${k}/${x.id}'">Detail</button><button onclick="openF('${x.id}')">Edit</button><button class="dgr" onclick="del('${x.id}')">Hapus</button></div></td></tr>`).join('')}</table>`:'<div class="empty">Belum ada data. Klik “+ Tambah”.</div>';
   if(fit&&grp.getLayers().length)M.fitBounds(grp.getBounds(),{padding:[30,30],maxZoom:17});
 }
 function zoom(id){const l=grp.getLayers().find(x=>x.rid===id);if(l){M.fitBounds(l.getBounds(),{maxZoom:18,padding:[40,40]});l.openPopup&&l.openPopup()}}
+const BK='foto-lahan';
+let DET=null,lastView=null;
+function mkMap(){
+  const m=L.map('map',{center:lastView?.c||[-0.03,109.345],zoom:lastView?.z||13});
+  const e=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'}).addTo(m);
+  const o=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OSM'});
+  L.control.layers({Satelit:e,Peta:o}).addTo(m);L.control.scale({imperial:false}).addTo(m);
+  m.on('moveend',()=>{lastView={c:m.getCenter(),z:m.getZoom()}});
+  return m;
+}
+const fdt=t=>t?new Date(t).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'}):'-';
+function detailPage(k,id){
+  const x=load(k).find(y=>y.id===id);
+  if(!x)return`<div class="empty">Data tidak ditemukan. <a class="g" href="#${k}">Kembali</a></div>`;
+  const g=build(k,x.sub,x.txt);x._g=g;DET={k,id};
+  const poly=g&&(k==='tin'||/Polygon/.test(g.type)),line=g&&/Line/.test(g.type);
+  const m2=poly?(x.luas_ha>0?Math.round(x.luas_ha*1e4):Math.round(k==='tin'?g.features.reduce((s,f)=>s+turf.area(f),0):turf.area(turf.feature(g)))):0;
+  const npt=parse(x.txt).flat().length;
+  let c=null;try{c=turf.centroid(k==='tin'?g:turf.feature(g)).geometry.coordinates}catch(e){}
+  const row=(a,b)=>`<div class="kv"><span>${a}</span><b>${b}</b></div>`;
+  return`<div class="ph"><div><a class="eyebrow" href="#${k}">← ${C[k].t}</a><h1>${C[k].i} ${esc(x.nama)}</h1><span class="${sc(x.status)}">${esc(x.status)}</span> <span style="color:var(--mut)">${esc(x.desa||'Desa belum diisi')}</span></div>
+  <div class="act"><button onclick="openF('${id}')">Edit</button><button class="dgr" onclick="delD()">Hapus</button></div></div>
+  <div class="split"><div>
+  <div class="card" style="margin-bottom:14px">
+   ${poly?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px"><div class="abox"><span>Luas (m²)</span><div class="big">${fm(m2)}</div></div><div class="abox"><span>Luas (hektar)</span><div class="big">${fh(m2/1e4)}</div></div></div><div style="color:var(--mut);margin-bottom:8px;font-size:12px">Dihitung di server (PostGIS, WGS84). 1 ha = 10.000 m²</div>`:''}
+   ${poly&&k!=='tin'?row('Keliling',fm(x.keliling_m||turf.length(turf.polygonToLine(turf.feature(g)))*1000)+' m'):''}
+   ${line?row('Panjang',fm(x.panjang_m||turf.length(turf.feature(g))*1000)+' m'):''}
+   ${k==='tin'?row('Jumlah segitiga',g.features.length):''}
+   ${row('Jenis',C[k].t+(x.sub?' · '+x.sub:''))}${row('Jumlah titik',npt)}
+   ${c?row('Titik pusat',`${c[1].toFixed(6)}, ${c[0].toFixed(6)}<br><a class="g" target="_blank" rel="noopener" href="https://www.google.com/maps?q=${c[1]},${c[0]}">Buka di Google Maps ↗</a>`):''}
+   ${row('Dibuat',fdt(x.dibuat))}${row('Diubah',fdt(x.diubah))}
+   <div class="kv" style="display:block;border:0"><span>Keterangan</span><div style="white-space:pre-wrap;margin-top:4px">${esc(x.ket||'-')}</div></div>
+  </div>
+  <div class="card" style="margin-bottom:14px"><h2>Foto lapangan</h2>
+   <input id="cap" placeholder="Keterangan foto (opsional)" style="width:100%;margin-bottom:8px">
+   <input type="file" accept="image/*" multiple onchange="upPhotos(this,'${id}')"><span id="upinfo" style="color:var(--g);margin-left:8px"></span>
+   <div id="ph"><div class="empty">Memuat…</div></div></div>
+  <div class="card"><details><summary style="cursor:pointer"><b>Daftar koordinat</b> <span style="color:var(--mut)">(lat,lng)</span></summary><pre class="co">${esc(x.txt)}</pre>
+   <button style="margin-top:8px;font-size:12px" onclick="navigator.clipboard.writeText(load(DET.k).find(y=>y.id===DET.id).txt).then(()=>alert('Koordinat disalin'))">Salin koordinat</button></details></div>
+  </div><div class="mapbox"><div id="map"></div></div></div>`;
+}
+function initDetail(){
+  const{k,id}=DET,x=load(k).find(y=>y.id===id),g=x._g;M=mkMap();
+  const mk=(c,r)=>(_,ll)=>L.circleMarker(ll,{radius:r,color:'#fff',weight:2,fillColor:c,fillOpacity:1});
+  load(k).filter(y=>y.id!==id).forEach(y=>{const gg=build(k,y.sub,y.txt);if(!gg)return;
+    L.geoJSON(gg,{style:{color:'#98a398',weight:1.5,fillOpacity:.05},pointToLayer:mk('#98a398',5)}).bindTooltip(esc(y.nama)).on('click',()=>{location.hash='#'+k+'/'+y.id}).addTo(M)});
+  if(!g)return;
+  const l=L.geoJSON(g,{style:{color:'#34c26b',weight:4,fillOpacity:.3},pointToLayer:mk('#34c26b',9)}).addTo(M);
+  if(k==='tin')parse(x.txt).flat().forEach(p=>L.circleMarker([p[1],p[0]],{radius:4,color:'#fff',fillColor:'#fff',fillOpacity:1}).addTo(M));
+  const b=l.getBounds();
+  if(b.getSouthWest().equals(b.getNorthEast()))M.flyTo(b.getCenter(),18);else M.flyToBounds(b,{padding:[50,50],maxZoom:18,duration:1.2});
+  loadPhotos(id);
+}
+async function delD(){
+  if(!confirm('Hapus data ini beserta fotonya?'))return;const{k,id}=DET;
+  const e=await delFeature(id);if(e)return alert('Gagal menghapus: '+e.message);
+  await refresh();location.hash='#'+k;
+}
+
+/* ---- Foto lapangan (Supabase Storage, bucket privat) ---- */
+async function loadPhotos(fid){
+  const el=$('#ph');if(!el)return;
+  const{data,error}=await sb.from('feature_photos').select('id,path,caption').eq('feature_id',Number(fid)).order('id');
+  if(error){el.innerHTML='<div class="empty">Fitur foto belum aktif. Jalankan 03_foto.sql di Supabase.</div>';return}
+  if(!data.length){el.innerHTML='<div class="empty" style="grid-column:1/-1">Belum ada foto.</div>';return}
+  const{data:u}=await sb.storage.from(BK).createSignedUrls(data.map(p=>p.path),3600),mp={};
+  (u||[]).forEach(a=>{mp[a.path]=a.signedUrl});
+  el.innerHTML=data.map(p=>`<figure class="fig"><img src="${esc(mp[p.path]||'')}" loading="lazy" onclick="zoomImg(this.src)"><figcaption><span>${esc(p.caption||'')}</span><button class="dgr" onclick="delPhoto(${p.id},'${esc(p.path)}')">Hapus</button></figcaption></figure>`).join('');
+}
+function shrink(file,max=1600){return new Promise((res,rej)=>{
+  const im=new Image(),u=URL.createObjectURL(file);
+  im.onload=()=>{const r=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');
+    c.width=Math.round(im.width*r);c.height=Math.round(im.height*r);c.getContext('2d').drawImage(im,0,0,c.width,c.height);URL.revokeObjectURL(u);
+    c.toBlob(b=>b?res(b):rej(new Error('Gagal memproses gambar')),'image/jpeg',.82)};
+  im.onerror=()=>rej(new Error('Bukan file gambar yang valid'));im.src=u})}
+async function upPhotos(inp,fid){
+  const files=[...inp.files];if(!files.length)return;const cap=$('#cap').value.trim();
+  for(let i=0;i<files.length;i++){
+    $('#upinfo').textContent=`Mengunggah ${i+1}/${files.length}…`;
+    try{const b=await shrink(files[i]),path=fid+'/'+Date.now()+'-'+Math.random().toString(36).slice(2,7)+'.jpg';
+      const u=await sb.storage.from(BK).upload(path,b,{contentType:'image/jpeg'});if(u.error)throw u.error;
+      const r=await sb.from('feature_photos').insert({feature_id:Number(fid),path,caption:cap||null});
+      if(r.error){await sb.storage.from(BK).remove([path]);throw r.error}
+    }catch(e){alert('Gagal unggah '+files[i].name+': '+e.message)}
+  }
+  inp.value='';$('#cap').value='';$('#upinfo').textContent='';loadPhotos(fid);
+}
+async function delPhoto(id,path){
+  if(!confirm('Hapus foto ini?'))return;
+  await sb.storage.from(BK).remove([path]);
+  const{error}=await sb.from('feature_photos').delete().eq('id',id);if(error)alert(error.message);
+  loadPhotos(DET.id);
+}
+function zoomImg(src){const d=document.createElement('div');d.id='lb';d.onclick=()=>d.remove();d.innerHTML='<img>';d.firstChild.src=src;document.body.appendChild(d)}
+
 let eid=null;
 function openF(id,ov){
   const k=cur,x=id?load(k).find(y=>y.id===id):null,v={...(x||{}),...(ov||{})};eid=id||null;
@@ -372,12 +474,16 @@ async function saveF(){
     titik_tin:k==='tin'?ewkt({type:'MultiPoint',coordinates:parse(txt).flat()}):null};
   const{error}=await(eid?sb.from('features').update(row).eq('id',Number(eid)):sb.from('features').insert(row));
   if(error)return alert('Gagal menyimpan: '+(/geom_valid/.test(error.message)?'bentuk tidak valid (garis saling menyilang?). Gambar ulang.':error.message));
-  dlg.close();await refresh();list(true);
+  dlg.close();await refresh();$('#tb')?list(true):route();
+}
+async function delFeature(id){
+  const{data:ph}=await sb.from('feature_photos').select('path').eq('feature_id',Number(id));
+  if(ph&&ph.length)await sb.storage.from(BK).remove(ph.map(p=>p.path));
+  return(await sb.from('features').delete().eq('id',Number(id))).error;
 }
 async function del(id){
-  if(!confirm('Hapus data ini?'))return;
-  const{error}=await sb.from('features').delete().eq('id',Number(id));
-  if(error)return alert('Gagal menghapus: '+error.message);
+  if(!confirm('Hapus data ini beserta fotonya?'))return;
+  const e=await delFeature(id);if(e)return alert('Gagal menghapus: '+e.message);
   await refresh();list();
 }
 boot();
