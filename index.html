@@ -1,777 +1,386 @@
 <!DOCTYPE html>
 <html lang="id">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>GeoLahan - Admin WebGIS</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
-  <style>
-    :root {
-      --bg: #141614;
-      --side: #0e100e;
-      --card: #1b1e1b;
-      --line: #2a2f2a;
-      --tx: #f4f6f3;
-      --mut: #98a398;
-      --g: #34c26b;
-      --gd: #27a057;
-      --w: #f6f7f5;
-      --k: #121412
-    }
-
-    * {
-      box-sizing: border-box
-    }
-
-    html,
-    body {
-      margin: 0;
-      height: 100%
-    }
-
-    body {
-      font: 14px/1.5 "Segoe UI", system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--tx)
-    }
-
-    a {
-      color: inherit;
-      text-decoration: none
-    }
-
-    #shell {
-      display: grid;
-      grid-template-columns: 250px 1fr;
-      min-height: 100%
-    }
-
-    #side {
-      background: var(--side);
-      border-right: 1px solid var(--line);
-      padding: 20px 14px;
-      position: sticky;
-      top: 0;
-      height: 100vh;
-      overflow: auto
-    }
-
-    .brand {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      padding: 0 8px 18px;
-      font-weight: 700;
-      font-size: 17px
-    }
-
-    .logo {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      background: var(--g);
-      color: var(--k);
-      display: grid;
-      place-items: center;
-      font-weight: 800
-    }
-
-    .grp {
-      font-size: 11px;
-      letter-spacing: .1em;
-      text-transform: uppercase;
-      color: var(--mut);
-      padding: 14px 10px 6px
-    }
-
-    .nav a {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      padding: 9px 10px;
-      border-radius: 8px;
-      color: #cfd6cf
-    }
-
-    .nav a i {
-      font-style: normal;
-      width: 20px;
-      text-align: center;
-      color: var(--mut)
-    }
-
-    .nav a:hover {
-      background: #181b18
-    }
-
-    .nav a.on {
-      background: var(--g);
-      color: var(--k);
-      font-weight: 600
-    }
-
-    .nav a.on i {
-      color: var(--k)
-    }
-
-    .who {
-      margin-top: 24px;
-      padding: 10px;
-      border: 1px solid var(--line);
-      border-radius: 10px;
-      font-size: 12px;
-      color: var(--mut)
-    }
-
-    #main {
-      padding: 28px 32px;
-      min-width: 0
-    }
-
-    #top {
-      display: none
-    }
-
-    .eyebrow {
-      color: var(--g);
-      font-size: 12px;
-      letter-spacing: .12em;
-      text-transform: uppercase;
-      font-weight: 600
-    }
-
-    h1 {
-      font-size: 28px;
-      margin: 4px 0 6px;
-      letter-spacing: -.01em
-    }
-
-    h2 {
-      font-size: 18px;
-      margin: 0 0 10px
-    }
-
-    p {
-      color: var(--mut);
-      margin: 0 0 10px
-    }
-
-    .g {
-      color: var(--g)
-    }
-
-    button,
-    input,
-    select,
-    textarea {
-      font: inherit;
-      color: var(--tx);
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 8px 12px
-    }
-
-    button {
-      cursor: pointer
-    }
-
-    button:hover {
-      border-color: var(--g)
-    }
-
-    .pri {
-      background: var(--g);
-      border-color: var(--g);
-      color: var(--k);
-      font-weight: 600
-    }
-
-    .pri:hover {
-      background: var(--gd)
-    }
-
-    .out {
-      background: transparent;
-      color: var(--tx)
-    }
-
-    .dgr {
-      color: #f0a0a0
-    }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      padding: 18px
-    }
-
-    .white {
-      background: var(--w);
-      color: var(--k);
-      border-color: var(--w)
-    }
-
-    .white p {
-      color: #4a524a
-    }
-
-    .white h2 {
-      color: var(--k)
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: 1.3fr 1fr;
-      gap: 20px;
-      align-items: stretch;
-      margin-bottom: 22px
-    }
-
-    .hero h1 {
-      font-size: 40px;
-      line-height: 1.12
-    }
-
-    .grid {
-      display: grid;
-      gap: 14px
-    }
-
-    .g3 {
-      grid-template-columns: repeat(3, 1fr)
-    }
-
-    .g2 {
-      grid-template-columns: 1fr 1fr
-    }
-
-    .stat:hover {
-      transform: none;
-      border-color: var(--line)
-    }
-
-    .mod {
-      display: block;
-      transition: .15s
-    }
-
-    .mod:hover {
-      border-color: var(--g);
-      transform: translateY(-2px)
-    }
-
-    .mod .ic {
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      background: #242a24;
-      display: grid;
-      place-items: center;
-      font-size: 18px;
-      color: var(--g);
-      margin-bottom: 10px
-    }
-
-    .mod b {
-      font-size: 22px;
-      display: block;
-      color: var(--g)
-    }
-
-    .num {
-      font-size: 34px;
-      font-weight: 700;
-      color: var(--k)
-    }
-
-    .step {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 12px
-    }
-
-    .step span {
-      flex: none;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: var(--k);
-      color: var(--g);
-      display: grid;
-      place-items: center;
-      font-weight: 700
-    }
-
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px
-    }
-
-    .chip {
-      padding: 4px 12px;
-      border-radius: 99px;
-      border: 1px solid var(--line);
-      font-size: 12px
-    }
-
-    .white .chip {
-      border-color: #c8cec8
-    }
-
-    .ph {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: flex-start;
-      margin-bottom: 16px
-    }
-
-    .tool {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 14px;
-      align-items: center
-    }
-
-    .tool input {
-      flex: 1;
-      max-width: 320px
-    }
-
-    .tool small {
-      color: var(--mut)
-    }
-
-    .split {
-      display: grid;
-      grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
-      gap: 16px
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse
-    }
-
-    th {
-      text-align: left;
-      font-size: 11px;
-      letter-spacing: .08em;
-      text-transform: uppercase;
-      color: var(--mut);
-      padding: 8px;
-      border-bottom: 1px solid var(--line)
-    }
-
-    td {
-      padding: 10px 8px;
-      border-bottom: 1px solid #232823;
-      vertical-align: top
-    }
-
-    td small {
-      color: var(--mut)
-    }
-
-    .act {
-      display: flex;
-      gap: 4px
-    }
-
-    .act button {
-      padding: 3px 8px;
-      font-size: 12px
-    }
-
-    .tag {
-      font-size: 11px;
-      padding: 2px 9px;
-      border-radius: 99px;
-      background: #34c26b22;
-      color: var(--g)
-    }
-
-    .tag.d {
-      background: #ffffff14;
-      color: #cfd6cf
-    }
-
-    .tag.s {
-      background: var(--w);
-      color: var(--k)
-    }
-
-    .mapbox {
-      position: sticky;
-      top: 20px;
-      height: calc(100vh - 220px);
-      min-height: 340px;
-      border-radius: 14px;
-      overflow: hidden;
-      border: 1px solid var(--line)
-    }
-
-    #map {
-      height: 100%
-    }
-
-    dialog {
-      background: var(--card);
-      color: var(--tx);
-      border: 1px solid var(--line);
-      border-radius: 14px;
-      width: min(480px, 94vw)
-    }
-
-    dialog::backdrop {
-      background: #000b
-    }
-
-    label {
-      display: block;
-      font-size: 12px;
-      color: var(--mut);
-      margin: 10px 0 4px
-    }
-
-    dialog input,
-    dialog select,
-    dialog textarea {
-      width: 100%
-    }
-
-    textarea {
-      font-family: ui-monospace, Consolas, monospace;
-      font-size: 12px
-    }
-
-    .empty {
-      padding: 30px;
-      text-align: center;
-      color: var(--mut)
-    }
-
-    #login {
-      position: fixed;
-      inset: 0;
-      z-index: 3000;
-      background: var(--bg);
-      display: grid;
-      place-items: center
-    }
-
-    #login.off {
-      display: none
-    }
-
-    .lbox {
-      width: min(360px, 92vw)
-    }
-
-    #login input {
-      width: 100%
-    }
-
-    @media(max-width:900px) {
-      #shell {
-        grid-template-columns: 1fr
-      }
-
-      #side {
-        position: fixed;
-        z-index: 2000;
-        left: -260px;
-        width: 250px;
-        transition: .2s
-      }
-
-      #side.open {
-        left: 0
-      }
-
-      #top {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 10px 16px;
-        background: var(--side);
-        border-bottom: 1px solid var(--line)
-      }
-
-      #main {
-        padding: 18px 16px
-      }
-
-      .hero,
-      .split,
-      .g3,
-      .g2 {
-        grid-template-columns: 1fr
-      }
-
-      .hero h1 {
-        font-size: 30px
-      }
-
-      .mapbox {
-        position: static;
-        height: 320px
-      }
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GeoLahan - Admin WebGIS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--bg:#141614;--side:#0e100e;--card:#1b1e1b;--line:#2a2f2a;--tx:#f4f6f3;--mut:#98a398;--g:#34c26b;--gd:#27a057;--w:#f6f7f5;--k:#121412}
+*{box-sizing:border-box}html,body{margin:0;height:100%}
+body{font:14px/1.5 "Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+a{color:inherit;text-decoration:none}
+#shell{display:grid;grid-template-columns:250px 1fr;min-height:100%}
+#side{background:var(--side);border-right:1px solid var(--line);padding:20px 14px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;gap:10px;align-items:center;padding:0 8px 18px;font-weight:700;font-size:17px}
+.logo{width:32px;height:32px;border-radius:8px;background:var(--g);color:var(--k);display:grid;place-items:center;font-weight:800}
+.grp{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);padding:14px 10px 6px}
+.nav a{display:flex;gap:10px;align-items:center;padding:9px 10px;border-radius:8px;color:#cfd6cf}
+.nav a i{font-style:normal;width:20px;text-align:center;color:var(--mut)}
+.nav a:hover{background:#181b18}.nav a.on{background:var(--g);color:var(--k);font-weight:600}.nav a.on i{color:var(--k)}
+.who{margin-top:24px;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:12px;color:var(--mut)}
+#main{padding:28px 32px;min-width:0}
+#top{display:none}
+.eyebrow{color:var(--g);font-size:12px;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+h1{font-size:28px;margin:4px 0 6px;letter-spacing:-.01em}h2{font-size:18px;margin:0 0 10px}
+p{color:var(--mut);margin:0 0 10px}
+.g{color:var(--g)}
+button,input,select,textarea{font:inherit;color:var(--tx);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 12px}
+button{cursor:pointer}button:hover{border-color:var(--g)}
+.pri{background:var(--g);border-color:var(--g);color:var(--k);font-weight:600}.pri:hover{background:var(--gd)}
+.out{background:transparent;color:var(--tx)}
+.dgr{color:#f0a0a0}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px}
+.white{background:var(--w);color:var(--k);border-color:var(--w)}.white p{color:#4a524a}.white h2{color:var(--k)}
+.hero{display:grid;grid-template-columns:1.3fr 1fr;gap:20px;align-items:stretch;margin-bottom:22px}
+.hero h1{font-size:40px;line-height:1.12}
+.grid{display:grid;gap:14px}.g3{grid-template-columns:repeat(3,1fr)}.g2{grid-template-columns:1fr 1fr}.stat:hover{transform:none;border-color:var(--line)}
+.mod{display:block;transition:.15s}.mod:hover{border-color:var(--g);transform:translateY(-2px)}
+.mod .ic{width:38px;height:38px;border-radius:10px;background:#242a24;display:grid;place-items:center;font-size:18px;color:var(--g);margin-bottom:10px}
+.mod b{font-size:22px;display:block;color:var(--g)}
+.num{font-size:34px;font-weight:700;color:var(--k)}
+.step{display:flex;gap:12px;margin-bottom:12px}.step span{flex:none;width:28px;height:28px;border-radius:50%;background:var(--k);color:var(--g);display:grid;place-items:center;font-weight:700}
+.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{padding:4px 12px;border-radius:99px;border:1px solid var(--line);font-size:12px}
+.white .chip{border-color:#c8cec8}
+.ph{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;margin-bottom:16px}
+.tool{display:flex;gap:10px;margin-bottom:14px;align-items:center}.tool input{flex:1;max-width:320px}.tool small{color:var(--mut)}
+.split{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:16px}
+table{width:100%;border-collapse:collapse}th{text-align:left;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);padding:8px;border-bottom:1px solid var(--line)}
+td{padding:10px 8px;border-bottom:1px solid #232823;vertical-align:top}td small{color:var(--mut)}
+.act{display:flex;gap:4px}.act button{padding:3px 8px;font-size:12px}
+.tag{font-size:11px;padding:2px 9px;border-radius:99px;background:#34c26b22;color:var(--g)}.tag.d{background:#ffffff14;color:#cfd6cf}.tag.s{background:var(--w);color:var(--k)}
+.mapbox{position:sticky;top:20px;height:calc(100vh - 220px);min-height:340px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+#map{height:100%}
+dialog{background:var(--card);color:var(--tx);border:1px solid var(--line);border-radius:14px;width:min(480px,94vw)}
+dialog::backdrop{background:#000b}
+label{display:block;font-size:12px;color:var(--mut);margin:10px 0 4px}dialog input,dialog select,dialog textarea{width:100%}
+textarea{font-family:ui-monospace,Consolas,monospace;font-size:12px}
+.empty{padding:30px;text-align:center;color:var(--mut)}
+#login{position:fixed;inset:0;z-index:3000;background:var(--bg);display:grid;place-items:center}#login.off{display:none}.lbox{width:min(360px,92vw)}#login input{width:100%}
+#mtool{position:absolute;top:10px;left:54px;right:54px;z-index:1000}
+#mtool .rw{display:flex;gap:6px}#mtool input{flex:1;min-width:0;background:#111411ee}#mtool button{padding:6px 10px;background:#111411ee}
+#mres{margin-top:4px;background:#111411f5;border:1px solid var(--line);border-radius:8px;max-height:200px;overflow:auto;display:none}
+#mres div{padding:7px 10px;cursor:pointer;font-size:12px;border-bottom:1px solid #232823}#mres div:hover{background:#1f241f}
+#drawbar{position:absolute;bottom:10px;left:10px;right:10px;z-index:1000;background:#0e100ef5;border:1px solid var(--g);border-radius:10px;padding:8px 10px;display:none;font-size:12px}
+#drawbar .rw{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}#drawbar button,#drawbar select{padding:4px 10px;font-size:12px}
+.vx{background:#fff;border:3px solid var(--g);border-radius:50%;box-sizing:border-box}
+.leaflet-container.drawing{cursor:crosshair}.drawing path.leaflet-interactive{pointer-events:none}
+@media(max-width:900px){#shell{grid-template-columns:1fr}#side{position:fixed;z-index:2000;left:-260px;width:250px;transition:.2s}#side.open{left:0}
+#top{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--side);border-bottom:1px solid var(--line)}
+#main{padding:18px 16px}.hero,.split,.g3,.g2{grid-template-columns:1fr}.hero h1{font-size:30px}.mapbox{position:relative;height:360px}}
+</style>
 </head>
-
 <body>
-  <div id="login">
-    <div class="card lbox">
-      <div class="brand" style="padding:0 0 14px">
-        <div class="logo">G</div>GeoLahan
-      </div>
-      <h2>Masuk Admin</h2>
-      <label>Email</label><input id="lE" type="email" autocomplete="username">
-      <label>Password</label><input id="lP" type="password" autocomplete="current-password">
-      <div id="lErr" style="color:#f0a0a0;font-size:12px;min-height:20px;margin:6px 0"></div>
-      <button class="pri" style="width:100%" onclick="doLogin()">Masuk</button>
-    </div>
-  </div>
-  <div id="top"><button onclick="document.getElementById('side').classList.toggle('open')">☰</button><b>GeoLahan</b>
-  </div>
-  <div id="shell">
-    <aside id="side">
-      <div class="brand">
-        <div class="logo">G</div>GeoLahan
-      </div>
-      <nav class="nav" id="nav"></nav>
-      <div class="who">Masuk sebagai<br><b id="me" style="color:var(--tx)">-</b><br><button
-          style="margin-top:8px;padding:4px 10px;font-size:12px" onclick="logout()">Keluar</button></div>
-    </aside>
-    <main id="main"></main>
-  </div>
-  <dialog id="dlg">
-    <h2 id="dT"></h2>
-    <label>Nama</label><input id="fN">
-    <label>Desa</label><input id="fD" placeholder="mis. Desa Sungai Durian">
-    <div id="fSubW" style="display:none"><label>Tipe multi-geometri</label><select id="fSub">
-        <option>MultiPoint</option>
-        <option>MultiLineString</option>
-        <option>MultiPolygon</option>
-      </select></div>
-    <label>Status</label><select id="fS">
-      <option>Draft</option>
-      <option>Diverifikasi</option>
-      <option>Selesai</option>
-    </select>
-    <label>Keterangan</label><input id="fK">
-    <label>Koordinat (lat,lng per baris)</label><textarea id="fC" rows="7"></textarea>
-    <div id="fH" style="font-size:12px;color:var(--mut);margin:6px 0 12px"></div>
-    <div style="display:flex;gap:8px;justify-content:flex-end"><button class="out"
-        onclick="dlg.close()">Batal</button><button class="pri" onclick="saveF()">Simpan</button></div>
-  </dialog>
+<div id="login"><div class="card lbox"><div class="brand" style="padding:0 0 14px"><div class="logo">G</div>GeoLahan</div><h2>Masuk Admin</h2>
+<label>Email</label><input id="lE" type="email" autocomplete="username">
+<label>Password</label><input id="lP" type="password" autocomplete="current-password">
+<div id="lErr" style="color:#f0a0a0;font-size:12px;min-height:20px;margin:6px 0"></div>
+<button class="pri" style="width:100%" onclick="doLogin()">Masuk</button></div></div>
+<div id="top"><button onclick="document.getElementById('side').classList.toggle('open')">☰</button><b>GeoLahan</b></div>
+<div id="shell">
+<aside id="side"><div class="brand"><div class="logo">G</div>GeoLahan</div>
+<nav class="nav" id="nav"></nav>
+<div class="who">Masuk sebagai<br><b id="me" style="color:var(--tx)">-</b><br><button style="margin-top:8px;padding:4px 10px;font-size:12px" onclick="logout()">Keluar</button></div></aside>
+<main id="main"></main>
+</div>
+<dialog id="dlg">
+<h2 id="dT"></h2>
+<label>Nama</label><input id="fN">
+<label>Desa</label><input id="fD" placeholder="mis. Desa Sungai Durian">
+<div id="fSubW" style="display:none"><label>Tipe multi-geometri</label><select id="fSub" onchange="updM()"><option>MultiPoint</option><option>MultiLineString</option><option>MultiPolygon</option></select></div>
+<label>Status</label><select id="fS"><option>Draft</option><option>Diverifikasi</option><option>Selesai</option></select>
+<label>Keterangan</label><input id="fK">
+<label>Bentuk di peta</label>
+<div style="display:flex;gap:8px;align-items:center"><div id="fM" style="flex:1;color:var(--g)"></div><button type="button" onclick="redraw()">✎ Gambar ulang</button></div>
+<details style="margin:10px 0 12px"><summary style="cursor:pointer;color:var(--mut);font-size:12px">Koordinat (opsional, edit manual)</summary>
+<textarea id="fC" rows="6" oninput="updM()" style="margin-top:6px"></textarea><div id="fH" style="font-size:12px;color:var(--mut);margin-top:4px"></div></details>
+<div style="display:flex;gap:8px;justify-content:flex-end"><button class="out" onclick="dlg.close()">Batal</button><button class="pri" onclick="saveF()">Simpan</button></div>
+</dialog>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
-  <script src="js/config.js"></script>
-  <script>
-    const $ = s => document.querySelector(s), dlg = $('#dlg');
-    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-    const C = {
-      polygon: { t: 'Polygon', i: '⬠', d: 'Batas bidang lahan yang dibuka. Luas dan keliling dihitung otomatis.', min: 3, h: 'Minimal 3 titik. Polygon ditutup otomatis.' },
-      point: { t: 'Titik (Point)', i: '●', d: 'Lokasi tunggal seperti patok, sampel tanah, atau titik foto lapangan.', min: 1, h: 'Satu titik: lat,lng.' },
-      line: { t: 'Garis (Polyline)', i: '╱', d: 'Jalan akses, parit, atau jalur survei. Panjang dihitung otomatis.', min: 2, h: 'Minimal 2 titik berurutan.' },
-      multi: { t: 'Multi-Geometri', i: '⬡', d: 'MultiPoint, MultiLineString, dan MultiPolygon: beberapa bagian dalam satu objek.', min: 1, h: 'Pisahkan tiap bagian dengan satu baris kosong.' },
-      tin: { t: 'TIN', i: '△', d: 'Jaringan segitiga tak beraturan dari titik-titik tinggi, dasar model permukaan.', min: 3, h: 'Minimal 3 titik. Segitiga Delaunay dibuat otomatis.' }
-    };
-    let DB = { polygon: [], point: [], line: [], multi: [], tin: [] }, ready = false, sb = null;
-    const load = k => DB[k] || [];
-    const ll = c => c[1] + ',' + c[0];
-    function toTxt(k, g) {
-      if (k === 'polygon') return g.coordinates[0].slice(0, -1).map(ll).join('\n');
-      if (k === 'point') return ll(g.coordinates);
-      if (k === 'line') return g.coordinates.map(ll).join('\n');
-      if (g.type === 'MultiPoint') return g.coordinates.map(ll).join('\n');
-      if (g.type === 'MultiLineString') return g.coordinates.map(l => l.map(ll).join('\n')).join('\n\n');
-      return g.coordinates.map(p => p[0].slice(0, -1).map(ll).join('\n')).join('\n\n');
-    }
-    const fromRow = r => ({
-      id: String(r.id), nama: r.nama, desa: r.desa || '', status: r.status, ket: r.ket || '',
-      txt: r.kind === 'tin' ? (r.titik_tin?.coordinates || []).map(ll).join('\n') : toTxt(r.kind, r.geom),
-      sub: r.kind === 'multi' ? r.geom.type : undefined
-    });
-    const pr = c => c.join(' ');
-    function wkt(g) {
-      switch (g.type) {
-        case 'Point': return `POINT(${pr(g.coordinates)})`;
-        case 'LineString': return `LINESTRING(${g.coordinates.map(pr)})`;
-        case 'Polygon': return `POLYGON(${g.coordinates.map(r => '(' + r.map(pr) + ')')})`;
-        case 'MultiPoint': return `MULTIPOINT(${g.coordinates.map(c => '(' + pr(c) + ')')})`;
-        case 'MultiLineString': return `MULTILINESTRING(${g.coordinates.map(l => '(' + l.map(pr) + ')')})`;
-        case 'MultiPolygon': return `MULTIPOLYGON(${g.coordinates.map(p => '(' + p.map(r => '(' + r.map(pr) + ')') + ')')})`;
-        case 'GeometryCollection': return `GEOMETRYCOLLECTION(${g.geometries.map(wkt)})`;
-      }
-    }
-    const ewkt = g => 'SRID=4326;' + wkt(g);
-    const dbGeom = (k, g) => k === 'tin' ? { type: 'GeometryCollection', geometries: g.features.map(f => f.geometry) } : g;
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@turf/turf@6.5.0/turf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script>
+const $=s=>document.querySelector(s),dlg=$('#dlg');
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const C={
+ polygon:{t:'Polygon',i:'⬠',d:'Batas bidang lahan yang dibuka. Luas dan keliling dihitung otomatis.',min:3,h:'Minimal 3 titik. Polygon ditutup otomatis.'},
+ point:{t:'Titik (Point)',i:'●',d:'Lokasi tunggal seperti patok, sampel tanah, atau titik foto lapangan.',min:1,h:'Satu titik: lat,lng.'},
+ line:{t:'Garis (Polyline)',i:'╱',d:'Jalan akses, parit, atau jalur survei. Panjang dihitung otomatis.',min:2,h:'Minimal 2 titik berurutan.'},
+ multi:{t:'Multi-Geometri',i:'⬡',d:'MultiPoint, MultiLineString, dan MultiPolygon: beberapa bagian dalam satu objek.',min:1,h:'Pisahkan tiap bagian dengan satu baris kosong.'},
+ tin:{t:'TIN',i:'△',d:'Jaringan segitiga tak beraturan dari titik-titik tinggi, dasar model permukaan.',min:3,h:'Minimal 3 titik. Segitiga Delaunay dibuat otomatis.'}
+};
+let DB={polygon:[],point:[],line:[],multi:[],tin:[]},ready=false,sb=null;
+const load=k=>DB[k]||[];
+const ll=c=>c[1]+','+c[0];
+function toTxt(k,g){
+  if(k==='polygon')return g.coordinates[0].slice(0,-1).map(ll).join('\n');
+  if(k==='point')return ll(g.coordinates);
+  if(k==='line')return g.coordinates.map(ll).join('\n');
+  if(g.type==='MultiPoint')return g.coordinates.map(ll).join('\n');
+  if(g.type==='MultiLineString')return g.coordinates.map(l=>l.map(ll).join('\n')).join('\n\n');
+  return g.coordinates.map(p=>p[0].slice(0,-1).map(ll).join('\n')).join('\n\n');
+}
+const fromRow=r=>({id:String(r.id),nama:r.nama,desa:r.desa||'',status:r.status,ket:r.ket||'',
+  txt:r.kind==='tin'?(r.titik_tin?.coordinates||[]).map(ll).join('\n'):toTxt(r.kind,r.geom),
+  sub:r.kind==='multi'?r.geom.type:undefined});
+const pr=c=>c.join(' ');
+function wkt(g){switch(g.type){
+ case'Point':return`POINT(${pr(g.coordinates)})`;
+ case'LineString':return`LINESTRING(${g.coordinates.map(pr)})`;
+ case'Polygon':return`POLYGON(${g.coordinates.map(r=>'('+r.map(pr)+')')})`;
+ case'MultiPoint':return`MULTIPOINT(${g.coordinates.map(c=>'('+pr(c)+')')})`;
+ case'MultiLineString':return`MULTILINESTRING(${g.coordinates.map(l=>'('+l.map(pr)+')')})`;
+ case'MultiPolygon':return`MULTIPOLYGON(${g.coordinates.map(p=>'('+p.map(r=>'('+r.map(pr)+')')+')')})`;
+ case'GeometryCollection':return`GEOMETRYCOLLECTION(${g.geometries.map(wkt)})`;}}
+const ewkt=g=>'SRID=4326;'+wkt(g);
+const dbGeom=(k,g)=>k==='tin'?{type:'GeometryCollection',geometries:g.features.map(f=>f.geometry)}:g;
 
-    async function refresh() {
-      const { data, error } = await sb.from('v_features').select('*').order('id');
-      if (error) return alert('Gagal memuat data: ' + error.message);
-      DB = { polygon: [], point: [], line: [], multi: [], tin: [] };
-      data.forEach(r => DB[r.kind] && DB[r.kind].push(fromRow(r)));
-    }
-    function showLogin(m) { $('#login').classList.remove('off'); $('#lErr').textContent = m || '' }
-    async function boot() {
-      const c = window.APP_CONFIG;
-      if (!c || c.SUPABASE_URL.includes('PROJECT_REF') || c.SUPABASE_PUBLISHABLE_KEY.includes('ISI_DI_SINI')) return showLogin('Isi js/config.js dengan URL dan publishable key Supabase.');
-      sb = sb || supabase.createClient(c.SUPABASE_URL, c.SUPABASE_PUBLISHABLE_KEY);
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) return showLogin();
-      const { data: a, error } = await sb.from('admin_users').select('user_id').maybeSingle();
-      if (error || !a) { await sb.auth.signOut(); return showLogin('Akun ini tidak terdaftar sebagai admin.') }
-      $('#me').textContent = session.user.email; $('#login').classList.add('off');
-      await refresh(); ready = true; route();
-    }
-    async function doLogin() {
-      $('#lErr').textContent = 'Memproses…';
-      if (!sb) await boot();
-      if (!sb) return;
-      const { error } = await sb.auth.signInWithPassword({ email: $('#lE').value.trim(), password: $('#lP').value });
-      if (error) return $('#lErr').textContent = 'Login gagal: ' + error.message;
-      boot();
-    }
-    async function logout() { await sb.auth.signOut(); location.reload() }
-    $('#lP').addEventListener('keydown', e => e.key === 'Enter' && doLogin());
-    const NAV = [['g', 'Umum'], ['beranda', 'Beranda', '⌂'], ['about', 'About', 'ⓘ'], ['g', 'Data Spasial'], ...Object.keys(C).map(k => [k, C[k].t, C[k].i])];
+async function refresh(){
+  const{data,error}=await sb.from('v_features').select('*').order('id');
+  if(error)return alert('Gagal memuat data: '+error.message);
+  DB={polygon:[],point:[],line:[],multi:[],tin:[]};
+  data.forEach(r=>DB[r.kind]&&DB[r.kind].push(fromRow(r)));
+}
+function showLogin(m){$('#login').classList.remove('off');$('#lErr').textContent=m||''}
+async function boot(){
+  const c=window.APP_CONFIG;
+  if(!c||c.SUPABASE_URL.includes('PROJECT_REF')||c.SUPABASE_PUBLISHABLE_KEY.includes('ISI_DI_SINI'))return showLogin('Isi js/config.js dengan URL dan publishable key Supabase.');
+  sb=sb||supabase.createClient(c.SUPABASE_URL,c.SUPABASE_PUBLISHABLE_KEY);
+  const{data:{session}}=await sb.auth.getSession();
+  if(!session)return showLogin();
+  const{data:a,error}=await sb.from('admin_users').select('user_id').maybeSingle();
+  if(error||!a){await sb.auth.signOut();return showLogin('Akun ini tidak terdaftar sebagai admin.')}
+  $('#me').textContent=session.user.email;$('#login').classList.add('off');
+  await refresh();ready=true;route();
+}
+async function doLogin(){
+  $('#lErr').textContent='Memproses…';
+  if(!sb)await boot();
+  if(!sb)return;
+  const{error}=await sb.auth.signInWithPassword({email:$('#lE').value.trim(),password:$('#lP').value});
+  if(error)return $('#lErr').textContent='Login gagal: '+error.message;
+  boot();
+}
+async function logout(){await sb.auth.signOut();location.reload()}
+$('#lP').addEventListener('keydown',e=>e.key==='Enter'&&doLogin());
+const NAV=[['g','Umum'],['beranda','Beranda','⌂'],['about','About','ⓘ'],['g','Data Spasial'],...Object.keys(C).map(k=>[k,C[k].t,C[k].i])];
 
-    /* geometri */
-    const parse = t => t.trim().split(/\n\s*\n/).map(g => g.trim().split('\n').map(l => l.split(',').map(s => +s.trim())).filter(a => a.length >= 2 && !a.some(isNaN)).map(([a, b]) => [b, a])).filter(g => g.length);
-    const ring = g => [...g, g[0]];
-    function build(k, sub, txt) {
-      const G = parse(txt), n = G.flat().length; if (n < C[k].min) return null;
-      if (k === 'polygon') return G[0].length >= 3 ? { type: 'Polygon', coordinates: [ring(G[0])] } : null;
-      if (k === 'point') return { type: 'Point', coordinates: G[0][0] };
-      if (k === 'line') return G[0].length >= 2 ? { type: 'LineString', coordinates: G[0] } : null;
-      if (k === 'tin') { const f = turf.tin(turf.featureCollection(G.flat().map(p => turf.point(p)))); return f.features.length ? f : null }
-      if (sub === 'MultiPoint') return { type: 'MultiPoint', coordinates: G.flat() };
-      if (sub === 'MultiLineString') return G.every(g => g.length >= 2) ? { type: 'MultiLineString', coordinates: G } : null;
-      return G.every(g => g.length >= 3) ? { type: 'MultiPolygon', coordinates: G.map(g => [ring(g)]) } : null;
-    }
-    const fm = v => v.toLocaleString('id-ID', { maximumFractionDigits: 2 });
-    function ukur(k, g) {
-      if (k === 'tin') { const a = g.features.reduce((s, f) => s + turf.area(f), 0) / 1e4; return `${g.features.length} segitiga · ${fm(a)} ha` }
-      if (/Polygon/.test(g.type)) { return fm(turf.area(turf.feature(g)) / 1e4) + ' ha' }
-      if (/Line/.test(g.type)) return fm(turf.length(turf.feature(g)) * 1000) + ' m';
-      return (g.type === 'Point' ? 1 : g.coordinates.length) + ' titik';
-    }
-    const sc = s => s === 'Selesai' ? 'tag s' : s === 'Draft' ? 'tag d' : 'tag';
+/* geometri */
+const parse=t=>t.trim().split(/\n\s*\n/).map(g=>g.trim().split('\n').map(l=>l.split(',').map(s=>+s.trim())).filter(a=>a.length>=2&&!a.some(isNaN)).map(([a,b])=>[b,a])).filter(g=>g.length);
+const ring=g=>[...g,g[0]];
+function build(k,sub,txt){
+  const G=parse(txt),n=G.flat().length;if(n<C[k].min)return null;
+  if(k==='polygon')return G[0].length>=3?{type:'Polygon',coordinates:[ring(G[0])]}:null;
+  if(k==='point')return{type:'Point',coordinates:G[0][0]};
+  if(k==='line')return G[0].length>=2?{type:'LineString',coordinates:G[0]}:null;
+  if(k==='tin'){const f=turf.tin(turf.featureCollection(G.flat().map(p=>turf.point(p))));return f.features.length?f:null}
+  if(sub==='MultiPoint')return{type:'MultiPoint',coordinates:G.flat()};
+  if(sub==='MultiLineString')return G.every(g=>g.length>=2)?{type:'MultiLineString',coordinates:G}:null;
+  return G.every(g=>g.length>=3)?{type:'MultiPolygon',coordinates:G.map(g=>[ring(g)])}:null;
+}
+const fm=v=>v.toLocaleString('id-ID',{maximumFractionDigits:2});
+function ukur(k,g){
+  if(k==='tin'){const a=g.features.reduce((s,f)=>s+turf.area(f),0)/1e4;return`${g.features.length} segitiga · ${fm(a)} ha`}
+  if(/Polygon/.test(g.type)){return fm(turf.area(turf.feature(g))/1e4)+' ha'}
+  if(/Line/.test(g.type))return fm(turf.length(turf.feature(g))*1000)+' m';
+  return(g.type==='Point'?1:g.coordinates.length)+' titik';
+}
+const sc=s=>s==='Selesai'?'tag s':s==='Draft'?'tag d':'tag';
 
-    /* router */
-    let M = null, cur = '';
-    function route() {
-      const k = (location.hash || '#beranda').slice(1); cur = C[k] ? k : (k === 'about' ? 'about' : 'beranda');
-      $('#nav').innerHTML = NAV.map(n => n[0] === 'g' ? `<div class="grp">${n[1]}</div>` : `<a href="#${n[0]}" class="${n[0] === cur ? 'on' : ''}"><i>${n[2]}</i>${n[1]}</a>`).join('');
-      $('#side').classList.remove('open'); if (M) { M.remove(); M = null }
-      $('#main').innerHTML = cur === 'beranda' ? home() : cur === 'about' ? about() : crudPage(cur);
-      if (C[cur]) initMap(); window.scrollTo(0, 0);
-    }
-    addEventListener('hashchange', () => ready && route());
+/* router */
+let M=null,cur='';
+function route(){
+  const k=(location.hash||'#beranda').slice(1);cur=C[k]?k:(k==='about'?'about':'beranda');
+  $('#nav').innerHTML=NAV.map(n=>n[0]==='g'?`<div class="grp">${n[1]}</div>`:`<a href="#${n[0]}" class="${n[0]===cur?'on':''}"><i>${n[2]}</i>${n[1]}</a>`).join('');
+  $('#side').classList.remove('open');draft=null;pin=null;dShapes=dMarks=null;if(M){M.remove();M=null}
+  $('#main').innerHTML=cur==='beranda'?home():cur==='about'?about():crudPage(cur);
+  if(C[cur])initMap();window.scrollTo(0,0);
+}
+addEventListener('hashchange',()=>ready&&route());
 
-    function home() {
-      const all = Object.keys(C).flatMap(k => load(k).map(x => ({ ...x, k, g: build(k, x.sub, x.txt) })));
-      const by = k => all.filter(x => x.k === k);
-      const ha = x => x.g && /Polygon/.test(x.g.type) ? turf.area(turf.feature(x.g)) / 1e4 : 0;
-      const luas = all.reduce((s, x) => s + ha(x), 0);
-      const pj = by('line').reduce((s, x) => s + (x.g ? turf.length(turf.feature(x.g)) * 1000 : 0), 0);
-      const desa = [...new Set(all.map(x => (x.desa || '').trim()).filter(Boolean))];
-      const done = all.filter(x => x.status === 'Selesai').length;
-      const pd = {}; all.forEach(x => { const d = (x.desa || '').trim() || 'Belum diisi'; (pd[d] = pd[d] || { n: 0, ha: 0 }).n++; pd[d].ha += ha(x) });
-      const card = (ic, v, l, h) => (h ? `<a href="${h}" class="card mod">` : '<div class="card mod stat">') + `<div class="ic">${ic}</div><b>${v}</b>${l}` + (h ? '</a>' : '</div>');
-      return `<div class="hero"><div class="card" style="padding:32px"><div class="eyebrow">Sistem Informasi Geografis</div>
+function home(){
+  const all=Object.keys(C).flatMap(k=>load(k).map(x=>({...x,k,g:build(k,x.sub,x.txt)})));
+  const by=k=>all.filter(x=>x.k===k);
+  const ha=x=>x.g&&/Polygon/.test(x.g.type)?turf.area(turf.feature(x.g))/1e4:0;
+  const luas=all.reduce((s,x)=>s+ha(x),0);
+  const pj=by('line').reduce((s,x)=>s+(x.g?turf.length(turf.feature(x.g))*1000:0),0);
+  const desa=[...new Set(all.map(x=>(x.desa||'').trim()).filter(Boolean))];
+  const done=all.filter(x=>x.status==='Selesai').length;
+  const pd={};all.forEach(x=>{const d=(x.desa||'').trim()||'Belum diisi';(pd[d]=pd[d]||{n:0,ha:0}).n++;pd[d].ha+=ha(x)});
+  const card=(ic,v,l,h)=>(h?`<a href="${h}" class="card mod">`:'<div class="card mod stat">')+`<div class="ic">${ic}</div><b>${v}</b>${l}`+(h?'</a>':'</div>');
+  return`<div class="hero"><div class="card" style="padding:32px"><div class="eyebrow">Sistem Informasi Geografis</div>
   <h1>Pemetaan pembukaan lahan yang <span class="g">akurat</span> dan terdokumentasi.</h1>
   <p style="max-width:520px">Gambar batas lahan, ukur luas, rekam jalur lapangan, dan kelola seluruh data spasial dalam satu panel admin.</p>
   <div style="display:flex;gap:10px;margin-top:18px"><a class="pri" style="padding:9px 18px;border-radius:8px" href="#polygon">Mulai Mapping</a><a class="out" style="padding:9px 18px;border-radius:8px;border:1px solid var(--line)" href="#about">Pelajari</a></div></div>
   <div class="card white" style="display:flex;flex-direction:column;justify-content:space-between"><div><div class="eyebrow" style="color:var(--gd)">Ringkasan</div><div class="num">${all.length}</div><p>objek spasial tersimpan</p></div>
   <div><div class="num">${fm(luas)} <small style="font-size:14px">ha</small></div><p style="margin:0">total luas terpetakan</p></div></div></div>
   <h2>Statistik pemetaan</h2><div class="grid g3" style="margin-bottom:22px">
-  ${card('⬠', by('polygon').length, 'Jumlah polygon lahan', '#polygon')}
-  ${card('⌂', desa.length, 'Desa yang dipetakan')}
-  ${card('▦', fm(luas) + ' ha', 'Total luas lahan')}
-  ${card('●', by('point').length, 'Titik lokasi (patok, sampel)', '#point')}
-  ${card('╱', fm(pj) + ' m', 'Total panjang jalur & jalan', '#line')}
-  ${card('✓', done + ' / ' + all.length, 'Laporan berstatus selesai')}</div>
-  <div class="grid g2"><div class="card"><h2>Sebaran per desa</h2><table><tr><th>Desa</th><th>Objek</th><th>Luas</th></tr>${Object.entries(pd).sort((a, b) => b[1].n - a[1].n).map(([d, v]) => `<tr><td>${esc(d)}</td><td>${v.n}</td><td>${fm(v.ha)} ha</td></tr>`).join('')}</table></div>
-  <div class="card"><h2>Data terbaru</h2><table><tr><th>Nama</th><th>Modul</th><th>Status</th></tr>${all.slice(-6).reverse().map(x => `<tr><td>${esc(x.nama)}<br><small>${esc(x.desa || '')}</small></td><td>${C[x.k].t}</td><td><span class="${sc(x.status)}">${esc(x.status)}</span></td></tr>`).join('')}</table></div></div>`;
-    }
-    function about() {
-      return `<div class="eyebrow">About</div><h1>Untuk apa website ini?</h1><p style="max-width:640px">GeoLahan membantu admin mencatat dan melaporkan kegiatan pembukaan lahan berbasis peta, dari rencana hingga realisasi di lapangan.</p>
-  <div class="grid g3" style="margin:18px 0">${[['Pelaporan', 'Setiap lahan tercatat lengkap dengan status, tanggal, dan keterangan sehingga mudah dipertanggungjawabkan.'], ['Pengukuran', 'Luas, panjang, dan keliling dihitung otomatis dari geometri, tanpa hitung manual.'], ['Dokumentasi', 'Data bisa diimport dari drone dan diexport ke GeoJSON atau CSV untuk QGIS dan ArcGIS.']].map(([a, b], i) => `<div class="card"><div class="mod"><div class="ic">${['▤', '⌖', '⇄'][i]}</div></div><h2>${a}</h2><p style="margin:0">${b}</p></div>`).join('')}</div>
-  <div class="grid g2"><div class="card white"><h2>Alur kerja</h2>${['Survei lapangan dengan tracking GPS atau drone.', 'Gambar atau import geometri ke modul yang sesuai.', 'Verifikasi dan ubah status laporan.', 'Export data untuk pelaporan dan analisis lanjutan.'].map((s, i) => `<div class="step"><span>${i + 1}</span><div>${s}</div></div>`).join('')}</div>
-  <div class="card"><h2>Jenis geometri</h2>${Object.keys(C).map(k => `<p><b style="color:var(--tx)">${C[k].i} ${C[k].t}</b><br>${C[k].d}</p>`).join('')}<h2 style="margin-top:14px">Teknologi</h2><div class="chips">${['Leaflet', 'Turf.js', 'Esri Satelit', 'NASA GIBS', 'Vercel'].map(c => `<span class="chip">${c}</span>`).join('')}</div></div></div>
+  ${card('⬠',by('polygon').length,'Jumlah polygon lahan','#polygon')}
+  ${card('⌂',desa.length,'Desa yang dipetakan')}
+  ${card('▦',fm(luas)+' ha','Total luas lahan')}
+  ${card('●',by('point').length,'Titik lokasi (patok, sampel)','#point')}
+  ${card('╱',fm(pj)+' m','Total panjang jalur & jalan','#line')}
+  ${card('✓',done+' / '+all.length,'Laporan berstatus selesai')}</div>
+  <div class="grid g2"><div class="card"><h2>Sebaran per desa</h2><table><tr><th>Desa</th><th>Objek</th><th>Luas</th></tr>${Object.entries(pd).sort((a,b)=>b[1].n-a[1].n).map(([d,v])=>`<tr><td>${esc(d)}</td><td>${v.n}</td><td>${fm(v.ha)} ha</td></tr>`).join('')}</table></div>
+  <div class="card"><h2>Data terbaru</h2><table><tr><th>Nama</th><th>Modul</th><th>Status</th></tr>${all.slice(-6).reverse().map(x=>`<tr><td>${esc(x.nama)}<br><small>${esc(x.desa||'')}</small></td><td>${C[x.k].t}</td><td><span class="${sc(x.status)}">${esc(x.status)}</span></td></tr>`).join('')}</table></div></div>`;
+}
+function about(){
+  return`<div class="eyebrow">About</div><h1>Untuk apa website ini?</h1><p style="max-width:640px">GeoLahan membantu admin mencatat dan melaporkan kegiatan pembukaan lahan berbasis peta, dari rencana hingga realisasi di lapangan.</p>
+  <div class="grid g3" style="margin:18px 0">${[['Pelaporan','Setiap lahan tercatat lengkap dengan status, tanggal, dan keterangan sehingga mudah dipertanggungjawabkan.'],['Pengukuran','Luas, panjang, dan keliling dihitung otomatis dari geometri, tanpa hitung manual.'],['Dokumentasi','Data bisa diimport dari drone dan diexport ke GeoJSON atau CSV untuk QGIS dan ArcGIS.']].map(([a,b],i)=>`<div class="card"><div class="mod"><div class="ic">${['▤','⌖','⇄'][i]}</div></div><h2>${a}</h2><p style="margin:0">${b}</p></div>`).join('')}</div>
+  <div class="grid g2"><div class="card white"><h2>Alur kerja</h2>${['Survei lapangan dengan tracking GPS atau drone.','Gambar atau import geometri ke modul yang sesuai.','Verifikasi dan ubah status laporan.','Export data untuk pelaporan dan analisis lanjutan.'].map((s,i)=>`<div class="step"><span>${i+1}</span><div>${s}</div></div>`).join('')}</div>
+  <div class="card"><h2>Jenis geometri</h2>${Object.keys(C).map(k=>`<p><b style="color:var(--tx)">${C[k].i} ${C[k].t}</b><br>${C[k].d}</p>`).join('')}<h2 style="margin-top:14px">Teknologi</h2><div class="chips">${['Leaflet','Turf.js','Esri Satelit','NASA GIBS','Vercel'].map(c=>`<span class="chip">${c}</span>`).join('')}</div></div></div>
   <p style="margin-top:14px">Catatan: citra satelit resolusi tinggi diperbarui berkala, bukan realtime. Citra harian NASA tersedia dengan resolusi lebih kasar.</p>`;
-    }
-    function crudPage(k) {
-      return `<div class="ph"><div><div class="eyebrow">Data Spasial</div><h1>${C[k].i} ${C[k].t}</h1><p>${C[k].d}</p></div><button class="pri" onclick="openF()">+ Tambah</button></div>
+}
+function crudPage(k){
+  return`<div class="ph"><div><div class="eyebrow">Data Spasial</div><h1>${C[k].i} ${C[k].t}</h1><p>${C[k].d}</p></div><button class="pri" onclick="startDraw()">+ Gambar di peta</button></div>
   <div class="tool"><input id="q" placeholder="Cari nama / desa…" oninput="list()"><select id="fs" onchange="list()"><option value="">Semua status</option><option>Draft</option><option>Diverifikasi</option><option>Selesai</option></select><small id="cnt"></small></div>
-  <div class="split"><div class="card" style="padding:8px"><div id="tb"></div></div><div class="mapbox"><div id="map"></div></div></div>`;
-    }
-    let grp;
-    function initMap() {
-      M = L.map('map', { center: [-0.03, 109.345], zoom: 14 });
-      const e = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19, attribution: 'Esri' }).addTo(M);
-      const o = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OSM' });
-      L.control.layers({ Satelit: e, Peta: o }).addTo(M); grp = L.featureGroup().addTo(M); list(true);
-    }
-    function list(fit) {
-      const k = cur, q = ($('#q').value || '').toLowerCase(), f = $('#fs').value;
-      const d = load(k).filter(x => (x.nama + ' ' + (x.desa || '')).toLowerCase().includes(q) && (!f || x.status === f));
-      $('#cnt').textContent = d.length + ' data'; grp.clearLayers();
-      d.forEach(x => {
-        const g = build(k, x.sub, x.txt); if (!g) return; x._g = g;
-        const l = L.geoJSON(g, { style: { color: '#34c26b', weight: 3, fillOpacity: .25 }, pointToLayer: (_, ll) => L.circleMarker(ll, { radius: 7, color: '#fff', fillColor: '#34c26b', fillOpacity: 1 }) });
-        l.bindPopup(`<b>${esc(x.nama)}</b><br>${ukur(k, g)}`); l.rid = x.id; grp.addLayer(l);
-        if (k === 'tin') L.geoJSON(x.txt ? turf.featureCollection(parse(x.txt).flat().map(p => turf.point(p))) : [], { pointToLayer: (_, ll) => L.circleMarker(ll, { radius: 4, color: '#fff', fillColor: '#fff', fillOpacity: 1 }) }).addTo(grp)
-      });
-      $('#tb').innerHTML = d.length ? `<table><tr><th>Nama</th><th>Ukuran</th><th></th></tr>${d.map(x => `<tr><td><b>${esc(x.nama)}</b><br><small>${esc(x.desa ? x.desa + ' · ' : '')}${esc(x.sub ? x.sub + ' · ' : '')}${esc(x.ket)}</small><br><span class="${sc(x.status)}">${esc(x.status)}</span></td><td>${x._g ? ukur(k, x._g) : '-'}</td><td><div class="act"><button onclick="zoom('${x.id}')">Lihat</button><button onclick="openF('${x.id}')">Edit</button><button class="dgr" onclick="del('${x.id}')">Hapus</button></div></td></tr>`).join('')}</table>` : '<div class="empty">Belum ada data. Klik “+ Tambah”.</div>';
-      if (fit && grp.getLayers().length) M.fitBounds(grp.getBounds(), { padding: [30, 30], maxZoom: 17 });
-    }
-    function zoom(id) { const l = grp.getLayers().find(x => x.rid === id); if (l) { M.fitBounds(l.getBounds(), { maxZoom: 18, padding: [40, 40] }); l.openPopup && l.openPopup() } }
-    let eid = null;
-    function openF(id) {
-      const k = cur, x = id ? load(k).find(y => y.id === id) : null; eid = id || null;
-      $('#dT').textContent = (x ? 'Edit ' : 'Tambah ') + C[k].t;
-      $('#fN').value = x?.nama || ''; $('#fD').value = x?.desa || ''; $('#fS').value = x?.status || 'Draft'; $('#fK').value = x?.ket || ''; $('#fC').value = x?.txt || '';
-      $('#fSubW').style.display = k === 'multi' ? 'block' : 'none'; $('#fSub').value = x?.sub || 'MultiPoint';
-      $('#fH').textContent = C[k].h + ' Menggambar langsung di peta akan ditambahkan saat integrasi.'; dlg.showModal();
-    }
-    async function saveF() {
-      const k = cur, nama = $('#fN').value.trim(), txt = $('#fC').value.trim(), sub = k === 'multi' ? $('#fSub').value : undefined;
-      if (!nama) return alert('Nama wajib diisi');
-      const g = build(k, sub, txt); if (!g) return alert('Koordinat belum valid. ' + C[k].h);
-      let desa_id = null; const dn = $('#fD').value.trim();
-      if (dn) {
-        const { data, error } = await sb.from('desa').upsert({ nama: dn }, { onConflict: 'nama' }).select('id').single();
-        if (error) return alert('Gagal menyimpan desa: ' + error.message); desa_id = data.id
-      }
-      const row = {
-        kind: k, nama, desa_id, status: $('#fS').value, ket: $('#fK').value, geom: ewkt(dbGeom(k, g)),
-        titik_tin: k === 'tin' ? ewkt({ type: 'MultiPoint', coordinates: parse(txt).flat() }) : null
-      };
-      const { error } = await (eid ? sb.from('features').update(row).eq('id', Number(eid)) : sb.from('features').insert(row));
-      if (error) return alert('Gagal menyimpan: ' + error.message);
-      dlg.close(); await refresh(); list(true);
-    }
-    async function del(id) {
-      if (!confirm('Hapus data ini?')) return;
-      const { error } = await sb.from('features').delete().eq('id', Number(id));
-      if (error) return alert('Gagal menghapus: ' + error.message);
-      await refresh(); list();
-    }
-    boot();
-  </script>
-</body>
+  <div class="split"><div class="card" style="padding:8px"><div id="tb"></div></div><div class="mapbox"><div id="map"></div>
+  <div id="mtool"><div class="rw"><input id="mq" placeholder="Cari desa/tempat, atau koordinat: -0.05, 109.33"><button onclick="cari()" title="Cari">🔍</button><button onclick="myLoc()" title="Lokasi saya">📍</button><button onclick="semua()" title="Semua data">▣</button></div><div id="mres"></div></div>
+  <div id="drawbar"></div></div></div>`;
+}
+let grp;
+function initMap(){
+  M=L.map('map',{center:[-0.03,109.345],zoom:14});
+  const e=L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Esri'}).addTo(M);
+  const o=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OSM'});
+  L.control.layers({Satelit:e,Peta:o}).addTo(M);grp=L.featureGroup().addTo(M);list(true);
+  M.on('click',ev=>draft&&addV(ev.latlng));
+  ['#mtool','#drawbar'].forEach(q=>L.DomEvent.disableClickPropagation($(q)));L.DomEvent.disableScrollPropagation($('#mres'));
+  $('#mq').addEventListener('keydown',ev=>ev.key==='Enter'&&cari());
+}
+function list(fit){
+  const k=cur,q=($('#q').value||'').toLowerCase(),f=$('#fs').value;
+  const d=load(k).filter(x=>(x.nama+' '+(x.desa||'')).toLowerCase().includes(q)&&(!f||x.status===f));
+  $('#cnt').textContent=d.length+' data';grp.clearLayers();
+  d.forEach(x=>{const g=build(k,x.sub,x.txt);if(!g)return;x._g=g;
+    const l=L.geoJSON(g,{style:{color:'#34c26b',weight:3,fillOpacity:.25},pointToLayer:(_,ll)=>L.circleMarker(ll,{radius:7,color:'#fff',fillColor:'#34c26b',fillOpacity:1})});
+    l.bindPopup(`<b>${esc(x.nama)}</b><br>${ukur(k,g)}`);l.rid=x.id;grp.addLayer(l);
+    if(k==='tin')L.geoJSON(x.txt?turf.featureCollection(parse(x.txt).flat().map(p=>turf.point(p))):[],{pointToLayer:(_,ll)=>L.circleMarker(ll,{radius:4,color:'#fff',fillColor:'#fff',fillOpacity:1})}).addTo(grp)});
+  $('#tb').innerHTML=d.length?`<table><tr><th>Nama</th><th>Ukuran</th><th></th></tr>${d.map(x=>`<tr><td><b>${esc(x.nama)}</b><br><small>${esc(x.desa?x.desa+' · ':'')}${esc(x.sub?x.sub+' · ':'')}${esc(x.ket)}</small><br><span class="${sc(x.status)}">${esc(x.status)}</span></td><td>${x._g?ukur(k,x._g):'-'}</td><td><div class="act"><button onclick="zoom('${x.id}')">Lihat</button><button onclick="openF('${x.id}')">Edit</button><button class="dgr" onclick="del('${x.id}')">Hapus</button></div></td></tr>`).join('')}</table>`:'<div class="empty">Belum ada data. Klik “+ Tambah”.</div>';
+  if(fit&&grp.getLayers().length)M.fitBounds(grp.getBounds(),{padding:[30,30],maxZoom:17});
+}
+function zoom(id){const l=grp.getLayers().find(x=>x.rid===id);if(l){M.fitBounds(l.getBounds(),{maxZoom:18,padding:[40,40]});l.openPopup&&l.openPopup()}}
+let eid=null;
+function openF(id,ov){
+  const k=cur,x=id?load(k).find(y=>y.id===id):null,v={...(x||{}),...(ov||{})};eid=id||null;
+  $('#dT').textContent=(x?'Edit ':'Tambah ')+C[k].t;
+  $('#fN').value=v.nama||'';$('#fD').value=v.desa||'';$('#fS').value=v.status||'Draft';$('#fK').value=v.ket||'';$('#fC').value=v.txt||'';
+  $('#fSubW').style.display=k==='multi'?'block':'none';$('#fSub').value=v.sub||'MultiPoint';
+  $('#fH').textContent=C[k].h+' Format: lat,lng per baris.';updM();dlg.showModal();
+}
+function updM(){const k=cur,g=build(k,k==='multi'?$('#fSub').value:undefined,$('#fC').value);$('#fM').textContent=g?'✓ '+ukur(k,g):'Belum ada bentuk. Klik “Gambar ulang”.'}
+function redraw(){startDraw(eid,{nama:$('#fN').value,desa:$('#fD').value,status:$('#fS').value,ket:$('#fK').value,txt:$('#fC').value,sub:$('#fSub').value})}
 
+/* ---- Pencarian lokasi / titik awal ---- */
+let pin=null;
+function goTo(lat,lng,z,label,bb){
+  if(bb)M.flyToBounds([[+bb[0],+bb[2]],[+bb[1],+bb[3]]],{maxZoom:17});else M.flyTo([lat,lng],z||17);
+  if(pin)pin.remove();
+  pin=L.circleMarker([lat,lng],{radius:9,color:'#fff',weight:3,fillColor:'#3b82f6',fillOpacity:1}).addTo(M)
+    .bindPopup(esc(label)+'<br><small>'+lat.toFixed(6)+', '+lng.toFixed(6)+'</small>').openPopup();
+}
+function myLoc(){
+  if(!navigator.geolocation)return alert('GPS tidak didukung perangkat ini');
+  navigator.geolocation.getCurrentPosition(p=>goTo(p.coords.latitude,p.coords.longitude,18,'Lokasi saya (±'+Math.round(p.coords.accuracy)+' m)'),
+    e=>alert('Gagal mengambil lokasi: '+e.message+'. Pastikan izin lokasi diaktifkan.'),{enableHighAccuracy:true,timeout:15000});
+}
+function semua(){if(grp.getLayers().length)M.fitBounds(grp.getBounds(),{padding:[30,30],maxZoom:17})}
+async function cari(){
+  const q=$('#mq').value.trim(),r=$('#mres');if(!q)return;
+  const m=q.match(/^(-?\d+(?:[.,]\d+)?)\s*[,;\s]\s*(-?\d+(?:[.,]\d+)?)$/);
+  if(m){const a=+m[1].replace(',','.'),b=+m[2].replace(',','.');
+    if(Math.abs(a)<=90&&Math.abs(b)<=180){r.style.display='none';return goTo(a,b,17,'Koordinat')}
+    return alert('Koordinat tidak valid. Format: lat, lng (contoh -0.05, 109.33)')}
+  r.style.display='block';r.innerHTML='<div>Mencari…</div>';
+  try{
+    const d=await(await fetch('https://nominatim.openstreetmap.org/search?format=jsonv2&limit=6&accept-language=id&q='+encodeURIComponent(q))).json();
+    r.innerHTML=d.length?d.map((x,i)=>`<div data-i="${i}">${esc(x.display_name)}</div>`).join(''):'<div>Tidak ditemukan. Coba nama lain atau ketik koordinat.</div>';
+    r.querySelectorAll('[data-i]').forEach(el=>el.onclick=()=>{const x=d[el.dataset.i];r.style.display='none';goTo(+x.lat,+x.lon,17,x.display_name,x.boundingbox)});
+  }catch(e){r.innerHTML='<div>Gagal mencari. Periksa koneksi internet.</div>'}
+}
+
+/* ---- Menggambar dengan klik di peta ---- */
+let draft=null,dShapes=null,dMarks=null;
+const sty={color:'#ffb020',weight:3,dashArray:'6 6',fillOpacity:.2,interactive:false};
+const vxIcon=L.divIcon({className:'vx',iconSize:[16,16]});
+const TIPS={polygon:'Klik peta untuk menandai sudut lahan (min. 3 titik).',point:'Klik peta di lokasi titik.',line:'Klik peta berurutan sepanjang jalur (min. 2 titik).',multi:'Pilih tipe, klik peta, lalu “+ Bagian baru” untuk bagian berikutnya.',tin:'Klik peta untuk menandai titik tinggi (min. 3 titik).'};
+const dTxt=()=>draft.groups.filter(g=>g.length).map(g=>g.map(p=>p[0].toFixed(7)+','+p[1].toFixed(7)).join('\n')).join('\n\n');
+function startDraw(id,ov){
+  if(!M)return;const k=cur,x=id?load(k).find(y=>y.id===id):null,t=ov?.txt??x?.txt;
+  let gr=t?parse(t).map(g=>g.map(([lng,lat])=>[lat,lng])):[];if(!gr.length)gr=[[]];
+  draft={k,id:id||null,sub:ov?.sub||x?.sub||'MultiPoint',groups:gr,gi:gr.length-1,form:ov||null};
+  dlg.close();M.closePopup();M.getContainer().classList.add('drawing');M.doubleClickZoom.disable();
+  dShapes=L.layerGroup().addTo(M);dMarks=L.layerGroup().addTo(M);
+  const b=$('#drawbar');b.style.display='block';
+  b.innerHTML=`<b>Mode gambar · ${C[k].t}</b> — ${TIPS[k]}<div id="dInfo" style="color:var(--g);margin-top:2px"></div><div class="rw">`+
+   (k==='multi'?`<select id="dSub" onchange="draft.sub=this.value;drawShapes();updBar()"><option>MultiPoint</option><option>MultiLineString</option><option>MultiPolygon</option></select><button onclick="newPart()">+ Bagian baru</button>`:'')+
+   `<button onclick="undoV()">↶ Urungkan</button><button class="dgr" onclick="cancelDraw()">Batal</button><button class="pri" onclick="finishDraw()">Selesai ✓</button></div><div style="color:var(--mut);margin-top:4px">Seret titik untuk menggeser · klik kanan / tekan lama pada titik untuk menghapus</div>`;
+  if(k==='multi')$('#dSub').value=draft.sub;
+  const pts=gr.flat();if(pts.length)M.fitBounds(pts,{padding:[60,60],maxZoom:18});
+  drawMarks();drawShapes();updBar();
+}
+function drawShapes(){
+  dShapes.clearLayers();const{k,sub,groups}=draft;
+  const poly=k==='polygon'||(k==='multi'&&sub==='MultiPolygon'),line=k==='line'||(k==='multi'&&sub==='MultiLineString');
+  groups.forEach(g=>{if(poly&&g.length>=3)L.polygon(g,sty).addTo(dShapes);else if((poly||line)&&g.length>1)L.polyline(g,sty).addTo(dShapes)});
+  if(k==='tin'){const p=groups.flat();if(p.length>=3)try{L.geoJSON(turf.tin(turf.featureCollection(p.map(a=>turf.point([a[1],a[0]])))),{style:{color:'#fff',weight:1,fillOpacity:.08},interactive:false}).addTo(dShapes)}catch(e){}}
+}
+function drawMarks(){
+  dMarks.clearLayers();
+  draft.groups.forEach((g,gi)=>g.forEach(p=>{
+    const m=L.marker(p,{draggable:true,icon:vxIcon,keyboard:false}).addTo(dMarks);
+    m.on('drag',e=>{const l=e.target.getLatLng();p[0]=l.lat;p[1]=l.lng;drawShapes();updBar()});
+    m.on('contextmenu',()=>{g.splice(g.indexOf(p),1);drawMarks();drawShapes();updBar()});
+  }));
+}
+function updBar(){
+  const n=draft.groups.flat().length,g=build(draft.k,draft.k==='multi'?draft.sub:undefined,dTxt());
+  $('#dInfo').textContent=n+' titik'+(g?' · '+ukur(draft.k,g):'');
+}
+function addV(ll){
+  const p=[ll.lat,ll.lng];
+  if(draft.k==='point'){draft.groups=[[p]];draft.gi=0}else draft.groups[draft.gi].push(p);
+  drawMarks();drawShapes();updBar();
+}
+function undoV(){
+  let g=draft.groups[draft.gi];
+  if(!g.length&&draft.gi>0){draft.groups.pop();draft.gi--;g=draft.groups[draft.gi]}
+  g.pop();drawMarks();drawShapes();updBar();
+}
+function newPart(){if(draft.groups[draft.gi].length){draft.groups.push([]);draft.gi++}}
+function endDraw(){
+  M.removeLayer(dShapes);M.removeLayer(dMarks);dShapes=dMarks=null;
+  M.getContainer().classList.remove('drawing');M.doubleClickZoom.enable();$('#drawbar').style.display='none';draft=null;
+}
+function finishDraw(){
+  const k=draft.k,sub=k==='multi'?draft.sub:undefined,txt=dTxt();
+  if(!build(k,sub,txt))return alert('Titik belum cukup. '+C[k].h);
+  const id=draft.id,ov={...(draft.form||{}),txt,sub};endDraw();openF(id,ov);
+}
+function cancelDraw(){const f=draft.form,id=draft.id;endDraw();if(f)openF(id,f)}
+
+async function saveF(){
+  const k=cur,nama=$('#fN').value.trim(),txt=$('#fC').value.trim(),sub=k==='multi'?$('#fSub').value:undefined;
+  if(!nama)return alert('Nama wajib diisi');
+  const g=build(k,sub,txt);if(!g)return alert('Koordinat belum valid. '+C[k].h);
+  let desa_id=null;const dn=$('#fD').value.trim();
+  if(dn){const{data,error}=await sb.from('desa').upsert({nama:dn},{onConflict:'nama'}).select('id').single();
+    if(error)return alert('Gagal menyimpan desa: '+error.message);desa_id=data.id}
+  const row={kind:k,nama,desa_id,status:$('#fS').value,ket:$('#fK').value,geom:ewkt(dbGeom(k,g)),
+    titik_tin:k==='tin'?ewkt({type:'MultiPoint',coordinates:parse(txt).flat()}):null};
+  const{error}=await(eid?sb.from('features').update(row).eq('id',Number(eid)):sb.from('features').insert(row));
+  if(error)return alert('Gagal menyimpan: '+(/geom_valid/.test(error.message)?'bentuk tidak valid (garis saling menyilang?). Gambar ulang.':error.message));
+  dlg.close();await refresh();list(true);
+}
+async function del(id){
+  if(!confirm('Hapus data ini?'))return;
+  const{error}=await sb.from('features').delete().eq('id',Number(id));
+  if(error)return alert('Gagal menghapus: '+error.message);
+  await refresh();list();
+}
+boot();
+</script>
+</body>
 </html>
