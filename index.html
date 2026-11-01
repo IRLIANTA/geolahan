@@ -74,6 +74,7 @@ textarea{font-family:ui-monospace,Consolas,monospace;font-size:12px}
 input[type=file]::file-selector-button{background:var(--g);color:var(--k);border:0;border-radius:6px;padding:5px 10px;margin-right:8px;font-weight:600;cursor:pointer}
 #lb{position:fixed;inset:0;z-index:5000;background:#000d;display:grid;place-items:center;cursor:zoom-out}#lb img{max-width:94vw;max-height:92vh;border-radius:8px}
 pre.co{background:#111411;border:1px solid var(--line);border-radius:8px;padding:10px;max-height:200px;overflow:auto;font-size:12px;margin:8px 0 0}
+.geo ul{margin:4px 0 8px;padding-left:18px;color:#cfd6cf}.geo h3{font-size:11px;color:var(--g);text-transform:uppercase;letter-spacing:.08em;margin:12px 0 4px}.geo p{margin:0 0 6px}
 @media(max-width:900px){#shell{grid-template-columns:1fr}#side{position:fixed;z-index:2000;left:-260px;width:250px;transition:.2s}#side.open{left:0}
 #top{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--side);border-bottom:1px solid var(--line)}
 #main{padding:18px 16px}.hero,.split,.g3,.g2{grid-template-columns:1fr}.hero h1{font-size:30px}.mapbox{position:relative;height:360px}}
@@ -236,11 +237,30 @@ function home(){
   <div class="grid g2"><div class="card"><h2>Sebaran per desa</h2><table><tr><th>Desa</th><th>Objek</th><th>Luas (m²)</th><th>Luas (ha)</th></tr>${Object.entries(pd).sort((a,b)=>b[1].n-a[1].n).map(([d,v])=>`<tr><td>${esc(d)}</td><td>${v.n}</td><td>${fm(v.ha*1e4)}</td><td>${fh(v.ha)}</td></tr>`).join('')}</table></div>
   <div class="card"><h2>Data terbaru</h2><table><tr><th>Nama</th><th>Modul</th><th>Status</th></tr>${all.slice(-6).reverse().map(x=>`<tr><td>${esc(x.nama)}<br><small>${esc(x.desa||'')}</small></td><td>${C[x.k].t}</td><td><span class="${sc(x.status)}">${esc(x.status)}</span></td></tr>`).join('')}</table></div></div>`;
 }
+const GEO=[
+ {i:'●',t:'Titik (Point)',apa:'Satu koordinat tunggal (lat, lng) yang menandai satu lokasi.',pakai:['Patok batas atau sudut lahan','Titik sampel tanah atau titik uji','Lokasi foto lapangan dan dokumentasi','Camp, gudang, atau posisi alat berat'],contoh:'Patok P-01 di sudut barat laut Blok A, lengkap dengan foto kondisi patok.',hasil:'Koordinat lat/lng dan foto lapangan.'},
+ {i:'╱',t:'Garis (Polyline)',apa:'Rangkaian titik yang tersambung dan tidak tertutup, membentuk jalur.',pakai:['Jalan akses atau jalan kebun','Parit, kanal, dan saluran drainase','Jalur survei dan hasil tracking GPS','Batas alami seperti tepi sungai'],contoh:'Jalan akses utama sepanjang beberapa ratus meter menuju Blok A dan Blok B.',hasil:'Panjang dalam meter.'},
+ {i:'⬠',t:'Polygon',apa:'Area tertutup yang dibatasi oleh minimal tiga titik. Inti dari pelaporan pembukaan lahan.',pakai:['Batas bidang lahan yang dibuka','Perbandingan area rencana dan realisasi pembukaan','Blok tanam atau petak kebun','Zona yang harus dihindari, misalnya sempadan sungai'],contoh:'Blok A seluas 12.000 m² (1,2 ha) yang dibuka pada tahap pertama.',hasil:'Luas (m² dan ha) serta keliling. Sisi polygon tidak boleh saling menyilang.'},
+ {i:'⬡',t:'Multi-Geometri',apa:'Beberapa bagian terpisah yang disimpan sebagai satu objek dengan satu set data (nama, status, keterangan). Ada tiga varian.',varian:[['MultiPoint','Sekelompok titik dalam satu kegiatan, misalnya 12 titik sampel tanah di satu blok.'],['MultiLineString','Beberapa jalur terpisah yang dikelola sebagai satu paket, misalnya jaringan parit di beberapa sisi kebun.'],['MultiPolygon','Beberapa petak terpisah milik satu pemilik atau satu izin, misalnya lahan yang terbelah sungai atau jalan.']],pakai:['Satu laporan untuk lahan yang tidak menyatu','Total luas gabungan dihitung otomatis','Statistik lebih rapi karena satu pemilik atau izin tercatat sebagai satu data'],contoh:'Petak Terpisah Timur: dua petak dengan satu pemilik, dilaporkan sebagai satu data.',hasil:'Luas total semua petak, atau panjang total semua jalur.'},
+ {i:'△',t:'TIN (Triangulated Irregular Network)',apa:'Jaringan segitiga yang dibentuk dari titik-titik tinggi hasil survei, dan menjadi dasar model permukaan tanah.',pakai:['Memodelkan bentuk permukaan tanah (kontur dan lereng)','Menghitung volume galian dan timbunan saat pembukaan atau perataan lahan','Merencanakan arah aliran air dan drainase','Menilai kemiringan lahan untuk risiko erosi dan keselamatan kerja'],contoh:'Kontur Blok A dari titik tinggi hasil survei drone.',hasil:'Jumlah segitiga dan luas jaringan. Catatan: saat ini aplikasi membentuk segitiga dari posisi (lat, lng) saja. Nilai ketinggian (Z) belum disimpan, jadi perhitungan volume dan kemiringan menjadi pengembangan berikutnya.'}
+];
 function about(){
-  return`<div class="eyebrow">About</div><h1>Untuk apa website ini?</h1><p style="max-width:640px">GeoLahan membantu admin mencatat dan melaporkan kegiatan pembukaan lahan berbasis peta, dari rencana hingga realisasi di lapangan.</p>
-  <div class="grid g3" style="margin:18px 0">${[['Pelaporan','Setiap lahan tercatat lengkap dengan status, tanggal, dan keterangan sehingga mudah dipertanggungjawabkan.'],['Pengukuran','Luas, panjang, dan keliling dihitung otomatis dari geometri, tanpa hitung manual.'],['Dokumentasi','Data bisa diimport dari drone dan diexport ke GeoJSON atau CSV untuk QGIS dan ArcGIS.']].map(([a,b],i)=>`<div class="card"><div class="mod"><div class="ic">${['▤','⌖','⇄'][i]}</div></div><h2>${a}</h2><p style="margin:0">${b}</p></div>`).join('')}</div>
-  <div class="grid g2"><div class="card white"><h2>Alur kerja</h2>${['Survei lapangan dengan tracking GPS atau drone.','Gambar atau import geometri ke modul yang sesuai.','Verifikasi dan ubah status laporan.','Export data untuk pelaporan dan analisis lanjutan.'].map((s,i)=>`<div class="step"><span>${i+1}</span><div>${s}</div></div>`).join('')}</div>
-  <div class="card"><h2>Jenis geometri</h2>${Object.keys(C).map(k=>`<p><b style="color:var(--tx)">${C[k].i} ${C[k].t}</b><br>${C[k].d}</p>`).join('')}<h2 style="margin-top:14px">Teknologi</h2><div class="chips">${['Leaflet','Turf.js','Esri Satelit','NASA GIBS','Vercel'].map(c=>`<span class="chip">${c}</span>`).join('')}</div></div></div>
+  return`<div class="eyebrow">About</div><h1>Untuk apa website ini?</h1><p style="max-width:680px">GeoLahan membantu admin mencatat dan melaporkan kegiatan pembukaan lahan berbasis peta, dari rencana hingga realisasi di lapangan.</p>
+  <div class="grid g3" style="margin:18px 0">${[['Pelaporan','Setiap lahan tercatat lengkap dengan status, desa, tanggal, foto lapangan, dan keterangan sehingga mudah dipertanggungjawabkan.'],['Pengukuran','Luas (m² dan hektar), keliling, dan panjang dihitung otomatis dari geometri, tanpa hitung manual.'],['Dokumentasi','Setiap data bisa dibuat menjadi laporan Word dan PDF: peta, tabel luas wilayah, tabel koordinat, dan keterangan.']].map(([a,b],i)=>`<div class="card"><div class="mod"><div class="ic">${['▤','⌖','⇄'][i]}</div></div><h2>${a}</h2><p style="margin:0">${b}</p></div>`).join('')}</div>
+  <div class="card white" style="margin-bottom:22px"><h2>Alur kerja</h2>${['Survei lapangan dengan tracking GPS atau drone.','Gambar bentuknya langsung di peta pada modul yang sesuai.','Lengkapi desa, status, keterangan, dan foto lapangan.','Verifikasi, lalu export laporan Word atau PDF untuk pelaporan.'].map((t,i)=>`<div class="step"><span>${i+1}</span><div>${t}</div></div>`).join('')}</div>
+  <div class="eyebrow">Panduan</div><h2 style="font-size:22px;margin:4px 0 6px">Jenis geometri dan kegunaannya</h2>
+  <p style="max-width:680px">Setiap objek di peta punya bentuk tertentu. Memilih bentuk yang tepat menentukan hasil ukur dan cara data dilaporkan.</p>
+  <div class="grid g2 geo">${GEO.map((o,i)=>`<div class="card"${i===4?' style="grid-column:1/-1"':''}><h2 style="color:var(--tx);font-size:17px"><span class="g">${o.i}</span> ${o.t}</h2>
+   <p>${o.apa}</p>${o.varian?`<h3>Tiga varian</h3><ul>${o.varian.map(v=>`<li><b>${v[0]}</b>: ${v[1]}</li>`).join('')}</ul>`:''}
+   <h3>Dipakai untuk</h3><ul>${o.pakai.map(p=>`<li>${p}</li>`).join('')}</ul>
+   <h3>Contoh</h3><p>${o.contoh}</p><h3>Hasil ukur</h3><p style="margin:0">${o.hasil}</p></div>`).join('')}</div>
+  <div class="card" style="margin-top:14px"><h2>Cara memilih jenis yang tepat</h2><table><tr><th>Pertanyaan Anda</th><th>Gunakan</th><th>Hasil</th></tr>
+   <tr><td>Di mana lokasi patok atau sampel ini?</td><td>Titik</td><td>Koordinat</td></tr>
+   <tr><td>Berapa panjang jalan atau parit ini?</td><td>Garis</td><td>Panjang (m)</td></tr>
+   <tr><td>Berapa luas lahan yang dibuka?</td><td>Polygon</td><td>Luas (m², ha)</td></tr>
+   <tr><td>Berapa total luas lahan satu pemilik yang terpisah-pisah?</td><td>Multi-Geometri (MultiPolygon)</td><td>Luas gabungan</td></tr>
+   <tr><td>Bagaimana bentuk permukaan tanahnya?</td><td>TIN</td><td>Model permukaan</td></tr></table></div>
+  <div class="card" style="margin-top:14px"><h2>Teknologi</h2><div class="chips">${['Leaflet','Turf.js','PostGIS','Supabase','Esri Satelit','NASA GIBS','docx','jsPDF','Vercel'].map(c=>`<span class="chip">${c}</span>`).join('')}</div></div>
   <p style="margin-top:14px">Catatan: citra satelit resolusi tinggi diperbarui berkala, bukan realtime. Citra harian NASA tersedia dengan resolusi lebih kasar.</p>`;
 }
 function crudPage(k){
@@ -269,6 +289,115 @@ function list(fit){
   if(fit&&grp.getLayers().length)M.fitBounds(grp.getBounds(),{padding:[30,30],maxZoom:17});
 }
 function zoom(id){const l=grp.getLayers().find(x=>x.rid===id);if(l){M.fitBounds(l.getBounds(),{maxZoom:18,padding:[40,40]});l.openPopup&&l.openPopup()}}
+/* ---- Laporan Word & PDF ---- */
+const DOCX='https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js',JSPDF='https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',ATBL='https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js';
+const libs={};
+const lib=u=>libs[u]||(libs[u]=new Promise((r,j)=>{const e=document.createElement('script');e.src=u;e.onload=r;e.onerror=()=>{delete libs[u];j(new Error('Gagal memuat pustaka laporan. Periksa koneksi internet.'))};document.head.appendChild(e)}));
+const tgl=()=>new Date().toLocaleDateString('id-ID',{dateStyle:'long'});
+const slug=s=>s.replace(/[^\w\-]+/g,'_').replace(/^_+|_+$/g,'')||'data';
+function dlBlob(b,n){const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=n;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000)}
+function repData(k,id){
+  const x=load(k).find(y=>y.id===id),g=build(k,x.sub,x.txt),gr=parse(x.txt);
+  const poly=k==='tin'||/Polygon/.test(g.type),line=k!=='tin'&&/Line/.test(g.type);
+  const m2=poly?(x.luas_ha>0?Math.round(x.luas_ha*1e4):Math.round(k==='tin'?g.features.reduce((s,f)=>s+turf.area(f),0):turf.area(turf.feature(g)))):0;
+  const kel=poly&&k!=='tin'?(x.keliling_m||turf.length(turf.polygonToLine(turf.feature(g)))*1000):0;
+  const pj=line?(x.panjang_m||turf.length(turf.feature(g))*1000):0;
+  let c=null;try{c=turf.centroid(k==='tin'?g:turf.feature(g)).geometry.coordinates}catch(e){}
+  const info=[['Nama lokasi',x.nama],['Jenis geometri',C[k].t+(x.sub?' ('+x.sub+')':'')],['Desa',x.desa||'-'],['Status',x.status]];
+  if(poly){info.push(['Luas (m²)',fm(m2)],['Luas (hektar)',fh(m2/1e4)]);k==='tin'?info.push(['Jumlah segitiga',String(g.features.length)]):info.push(['Keliling (m)',fm(kel)])}
+  if(line)info.push(['Panjang (m)',fm(pj)]);
+  info.push(['Jumlah titik',String(gr.flat().length)]);
+  if(c)info.push(['Titik pusat (lat, lng)',c[1].toFixed(6)+', '+c[0].toFixed(6)]);
+  info.push(['Sistem koordinat','WGS84 (EPSG:4326), derajat desimal'],['Dibuat',fdt(x.dibuat)],['Diubah',fdt(x.diubah)]);
+  let no=0;const coords=[];gr.forEach((gg,i)=>gg.forEach(p=>coords.push([++no,gr.length>1?'Bagian '+(i+1):'-',p[1].toFixed(6),p[0].toFixed(6)])));
+  return{x,k,g,gr,info,coords};
+}
+/* Peta statis: tile Esri digambar ke canvas + geometri + nomor titik + skala + arah utara */
+async function mapImage(R){
+  const{k,g,gr,x}=R,W=1200,H=700,cv=document.createElement('canvas');cv.width=W;cv.height=H;const cx=cv.getContext('2d');
+  const pts=[],walk=a=>typeof a[0]==='number'?pts.push(a):a.forEach(walk);
+  (k==='tin'?g.features.map(f=>f.geometry):[g]).forEach(gg=>walk(gg.coordinates));
+  const xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]),x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
+  const wx=(lng,z)=>(lng+180)/360*256*2**z,wy=(lat,z)=>{const s=Math.sin(lat*Math.PI/180);return(.5-Math.log((1+s)/(1-s))/(4*Math.PI))*256*2**z};
+  let z=18;while(z>3&&(Math.abs(wx(x1,z)-wx(x0,z))>W*.7||Math.abs(wy(y0,z)-wy(y1,z))>H*.7))z--;
+  const L=(wx(x0,z)+wx(x1,z))/2-W/2,T=(wy(y0,z)+wy(y1,z))/2-H/2,P=p=>[wx(p[0],z)-L,wy(p[1],z)-T];
+  cx.fillStyle='#1b1e1b';cx.fillRect(0,0,W,H);
+  const n=2**z,jobs=[];
+  for(let tx=Math.floor(L/256);tx<=Math.floor((L+W)/256);tx++)for(let ty=Math.floor(T/256);ty<=Math.floor((T+H)/256);ty++){
+    if(ty<0||ty>=n)continue;
+    jobs.push(new Promise(r=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>{cx.drawImage(im,tx*256-L,ty*256-T);r(1)};im.onerror=()=>r(0);setTimeout(()=>r(0),15000);
+      im.src=`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${ty}/${((tx%n)+n)%n}`}));
+  }
+  const okc=(await Promise.all(jobs)).filter(Boolean).length;cv.ok=okc>0;
+  cx.lineJoin='round';cx.lineCap='round';
+  const path=(l,close)=>{l.forEach((p,i)=>{const q=P(p);i?cx.lineTo(q[0],q[1]):cx.moveTo(q[0],q[1])});if(close)cx.closePath()};
+  const dPoly=(pl,tri)=>{cx.beginPath();pl.forEach(r=>path(r,1));
+    if(!tri){cx.fillStyle='rgba(52,194,107,.30)';cx.fill('evenodd');cx.lineWidth=7;cx.strokeStyle='#fff';cx.stroke();cx.lineWidth=3.5;cx.strokeStyle='#34c26b'}
+    else{cx.lineWidth=1.5;cx.strokeStyle='rgba(255,255,255,.85)'}cx.stroke()};
+  const dLine=l=>{cx.beginPath();path(l);cx.lineWidth=7;cx.strokeStyle='#fff';cx.stroke();cx.lineWidth=4;cx.strokeStyle='#ffb020';cx.stroke()};
+  (k==='tin'?g.features.map(f=>f.geometry):[g]).forEach(gg=>{
+    if(gg.type==='Polygon')dPoly(gg.coordinates,k==='tin');else if(gg.type==='MultiPolygon')gg.coordinates.forEach(pl=>dPoly(pl,0));
+    else if(gg.type==='LineString')dLine(gg.coordinates);else if(gg.type==='MultiLineString')gg.coordinates.forEach(dLine)});
+  let no=0;const many=gr.flat().length>80;
+  gr.forEach(gg=>gg.forEach(p=>{no++;const[a,b]=P(p);cx.beginPath();cx.arc(a,b,many?3:11,0,7);cx.fillStyle='#fff';cx.fill();cx.lineWidth=2.5;cx.strokeStyle='#1b8f4c';cx.stroke();
+    if(!many){cx.fillStyle='#111';cx.font='bold 12px sans-serif';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(no,a,b+.5)}}));
+  /* judul, skala, utara, atribusi */
+  cx.textAlign='left';cx.textBaseline='alphabetic';
+  cx.fillStyle='rgba(14,16,14,.82)';cx.fillRect(0,0,W,48);cx.fillStyle='#fff';cx.font='bold 22px sans-serif';cx.fillText(x.nama+(x.desa?'  ·  '+x.desa:''),16,31);
+  const mpp=156543.03392*Math.cos((y0+y1)/2*Math.PI/180)/2**z,mt=150*mpp,base=10**Math.floor(Math.log10(mt)),nice=[5,2,1].map(b=>b*base).find(v=>v<=mt),len=nice/mpp,bx=24,by=H-44;
+  cx.fillStyle='rgba(14,16,14,.7)';cx.fillRect(bx-10,by-26,len+70,50);
+  cx.strokeStyle='#fff';cx.lineWidth=4;cx.beginPath();cx.moveTo(bx,by-6);cx.lineTo(bx,by+6);cx.moveTo(bx,by);cx.lineTo(bx+len,by);cx.moveTo(bx+len,by-6);cx.lineTo(bx+len,by+6);cx.stroke();
+  cx.fillStyle='#fff';cx.font='bold 14px sans-serif';cx.fillText(nice>=1000?nice/1000+' km':nice+' m',bx,by-12);
+  cx.fillStyle='rgba(14,16,14,.82)';cx.beginPath();cx.arc(W-40,92,26,0,7);cx.fill();cx.fillStyle='#34c26b';cx.beginPath();cx.moveTo(W-40,72);cx.lineTo(W-31,100);cx.lineTo(W-40,94);cx.lineTo(W-49,100);cx.fill();cx.fillStyle='#fff';cx.font='bold 13px sans-serif';cx.textAlign='center';cx.fillText('U',W-40,118);
+  cx.textAlign='right';cx.fillStyle='rgba(255,255,255,.85)';cx.font='12px sans-serif';cx.fillText(cv.ok?'Citra: Esri World Imagery · WGS84':'Citra satelit tidak dapat dimuat · WGS84',W-12,H-10);
+  return cv;
+}
+/*BUILDERS-START*/
+async function mkDocx(R,bin){
+  const{Document,Packer,Paragraph,TextRun,ImageRun,Table,TableRow,TableCell,WidthType,AlignmentType,ShadingType,HeadingLevel}=docx;
+  const cell=(t,w,head)=>new TableCell({width:{size:w,type:WidthType.DXA},shading:head?{type:ShadingType.CLEAR,fill:'27A057',color:'auto'}:undefined,margins:{top:60,bottom:60,left:100,right:100},children:[new Paragraph({children:[new TextRun({text:String(t),bold:!!head,color:head?'FFFFFF':undefined,size:20})]})]});
+  const tbl=(head,rows,ws)=>new Table({width:{size:ws.reduce((a,b)=>a+b),type:WidthType.DXA},columnWidths:ws,rows:[new TableRow({tableHeader:true,children:head.map((h,i)=>cell(h,ws[i],1))}),...rows.map(r=>new TableRow({children:r.map((v,i)=>cell(v,ws[i]))}))]});
+  const hd=t=>new Paragraph({heading:HeadingLevel.HEADING_2,spacing:{before:320,after:120},children:[new TextRun({text:t,bold:true,color:'1B8F4C',size:26})]});
+  const ket=(R.x.ket||'Tidak ada keterangan.').split('\n').map(t=>new Paragraph({spacing:{after:80},children:[new TextRun({text:t,size:22})]}));
+  const doc=new Document({creator:'GeoLahan',title:'Laporan '+R.x.nama,sections:[{properties:{page:{size:{width:11906,height:16838},margin:{top:720,bottom:720,left:900,right:900}}},children:[
+    new Paragraph({alignment:AlignmentType.CENTER,children:[new ImageRun({data:bin,transformation:{width:640,height:373}})]}),
+    new Paragraph({alignment:AlignmentType.CENTER,spacing:{after:120},children:[new TextRun({text:'Gambar 1. Peta lokasi '+R.x.nama,italics:true,size:18,color:'666666'})]}),
+    hd('1. Luas Wilayah'),tbl(['Uraian','Keterangan'],R.info,[3000,7100]),
+    hd('2. Titik Koordinat'),tbl(['No','Bagian','Latitude','Longitude'],R.coords,[900,2000,3600,3600]),
+    hd('3. Keterangan'),...ket,
+    new Paragraph({spacing:{before:400},children:[new TextRun({text:'Dicetak '+tgl()+' · GeoLahan · Sistem koordinat WGS84',size:16,color:'888888'})]})
+  ]}]});
+  return Packer.toBlob(doc);
+}
+function mkPdf(JS,R,img){
+  const doc=new JS({unit:'mm',format:'a4'}),pw=210,mg=14,cw=pw-2*mg,ih=cw*700/1200;
+  doc.addImage(img,'JPEG',mg,mg,cw,ih);
+  let y=mg+ih+5;
+  doc.setFont('helvetica','italic');doc.setFontSize(9);doc.setTextColor(110);doc.text('Gambar 1. Peta lokasi '+R.x.nama,pw/2,y,{align:'center'});y+=9;
+  const hd=t=>{if(y>255){doc.addPage();y=mg+4}doc.setFont('helvetica','bold');doc.setFontSize(12);doc.setTextColor(27,143,76);doc.text(t,mg,y);y+=2};
+  const tb=(head,body,cs)=>{doc.autoTable({startY:y,head:[head],body,theme:'grid',margin:{left:mg,right:mg},styles:{fontSize:9,cellPadding:2},headStyles:{fillColor:[39,160,87],textColor:255},columnStyles:cs});y=doc.lastAutoTable.finalY+8};
+  hd('1. Luas Wilayah');tb(['Uraian','Keterangan'],R.info,{0:{cellWidth:50,fontStyle:'bold'}});
+  hd('2. Titik Koordinat');tb(['No','Bagian','Latitude','Longitude'],R.coords,{0:{cellWidth:14}});
+  hd('3. Keterangan');y+=5;
+  doc.setFont('helvetica','normal');doc.setFontSize(10);doc.setTextColor(30);
+  doc.splitTextToSize(R.x.ket||'Tidak ada keterangan.',cw).forEach(l=>{if(y>280){doc.addPage();y=mg+4}doc.text(l,mg,y);y+=5});
+  const np=doc.getNumberOfPages();
+  for(let i=1;i<=np;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(130);doc.text('GeoLahan · '+tgl()+' · WGS84 · Halaman '+i+'/'+np,pw/2,291,{align:'center'})}
+  return doc;
+}
+/*BUILDERS-END*/
+async function expRep(type){
+  const{k,id}=DET,R=repData(k,id),inf=$('#exinfo'),fn='Laporan_'+slug(R.x.nama)+'_'+k;
+  try{
+    inf.textContent='Menyiapkan peta…';const cv=await mapImage(R);
+    if(!cv.ok)alert('Catatan: citra satelit tidak dapat dimuat, peta dibuat tanpa gambar latar.');
+    inf.textContent='Menyusun '+(type==='docx'?'Word':'PDF')+'…';
+    if(type==='docx'){await lib(DOCX);dlBlob(await mkDocx(R,Uint8Array.from(atob(cv.toDataURL('image/png').split(',')[1]),c=>c.charCodeAt(0))),fn+'.docx')}
+    else{await lib(JSPDF);await lib(ATBL);mkPdf(window.jspdf.jsPDF,R,cv.toDataURL('image/jpeg',.9)).save(fn+'.pdf')}
+    inf.textContent='✓ Selesai';setTimeout(()=>{inf.textContent=''},3000);
+  }catch(e){inf.textContent='';alert('Gagal membuat laporan: '+e.message)}
+}
+
 const BK='foto-lahan';
 let DET=null,lastView=null;
 function mkMap(){
@@ -290,7 +419,7 @@ function detailPage(k,id){
   let c=null;try{c=turf.centroid(k==='tin'?g:turf.feature(g)).geometry.coordinates}catch(e){}
   const row=(a,b)=>`<div class="kv"><span>${a}</span><b>${b}</b></div>`;
   return`<div class="ph"><div><a class="eyebrow" href="#${k}">← ${C[k].t}</a><h1>${C[k].i} ${esc(x.nama)}</h1><span class="${sc(x.status)}">${esc(x.status)}</span> <span style="color:var(--mut)">${esc(x.desa||'Desa belum diisi')}</span></div>
-  <div class="act"><button onclick="openF('${id}')">Edit</button><button class="dgr" onclick="delD()">Hapus</button></div></div>
+  <div class="act"><span id="exinfo" style="color:var(--g);font-size:12px;align-self:center"></span><button onclick="expRep('docx')">⬇ Word</button><button onclick="expRep('pdf')">⬇ PDF</button><button onclick="openF('${id}')">Edit</button><button class="dgr" onclick="delD()">Hapus</button></div></div>
   <div class="split"><div>
   <div class="card" style="margin-bottom:14px">
    ${poly?`<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:8px"><div class="abox"><span>Luas (m²)</span><div class="big">${fm(m2)}</div></div><div class="abox"><span>Luas (hektar)</span><div class="big">${fh(m2/1e4)}</div></div></div><div style="color:var(--mut);margin-bottom:8px;font-size:12px">Dihitung di server (PostGIS, WGS84). 1 ha = 10.000 m²</div>`:''}
