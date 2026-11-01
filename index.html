@@ -75,9 +75,13 @@ input[type=file]::file-selector-button{background:var(--g);color:var(--k);border
 #lb{position:fixed;inset:0;z-index:5000;background:#000d;display:grid;place-items:center;cursor:zoom-out}#lb img{max-width:94vw;max-height:92vh;border-radius:8px}
 pre.co{background:#111411;border:1px solid var(--line);border-radius:8px;padding:10px;max-height:200px;overflow:auto;font-size:12px;margin:8px 0 0}
 .geo ul{margin:4px 0 8px;padding-left:18px;color:#cfd6cf}.geo h3{font-size:11px;color:var(--g);text-transform:uppercase;letter-spacing:.08em;margin:12px 0 4px}.geo p{margin:0 0 6px}
+.who2{display:flex;gap:28px;align-items:center}
+.ava{width:180px;height:180px;border-radius:50%;object-fit:cover;border:4px solid var(--g);box-shadow:0 0 0 7px #34c26b24;flex:none;background:#222}
+.sl{display:flex;gap:14px;align-items:center}.sl .ic{margin:0;flex:none;font-weight:700;font-size:15px}.sl b{font-size:15px;color:var(--tx);display:block}.sl span{font-size:12px;color:var(--mut);word-break:break-all}
+.geo2 ol{margin:6px 0 0;padding-left:18px}.geo2 li{margin-bottom:6px}
 @media(max-width:900px){#shell{grid-template-columns:1fr}#side{position:fixed;z-index:2000;left:-260px;width:250px;transition:.2s}#side.open{left:0}
 #top{display:flex;align-items:center;gap:10px;padding:10px 16px;background:var(--side);border-bottom:1px solid var(--line)}
-#main{padding:18px 16px}.hero,.split,.g3,.g2{grid-template-columns:1fr}.hero h1{font-size:30px}.mapbox{position:relative;height:360px}}
+#main{padding:18px 16px}.hero,.split,.g3,.g2{grid-template-columns:1fr}.who2{flex-direction:column;text-align:center}.hero h1{font-size:30px}.mapbox{position:relative;height:360px}}
 </style>
 </head>
 <body>
@@ -90,7 +94,8 @@ pre.co{background:#111411;border:1px solid var(--line);border-radius:8px;padding
 <div id="shell">
 <aside id="side"><div class="brand"><div class="logo">G</div>GeoLahan</div>
 <nav class="nav" id="nav"></nav>
-<div class="who">Masuk sebagai<br><b id="me" style="color:var(--tx)">-</b><br><button style="margin-top:8px;padding:4px 10px;font-size:12px" onclick="logout()">Keluar</button></div></aside>
+<div class="who">Masuk sebagai<br><b id="me" style="color:var(--tx)">-</b><br><button style="margin-top:8px;padding:4px 10px;font-size:12px" onclick="logout()">Keluar</button></div>
+<div style="margin-top:14px;font-size:11px"><a href="#hakcipta" style="color:var(--mut)">© 2026 Irlianta Rizkiawan</a></div></aside>
 <main id="main"></main>
 </div>
 <dialog id="dlg">
@@ -175,7 +180,7 @@ async function doLogin(){
 }
 async function logout(){await sb.auth.signOut();location.reload()}
 $('#lP').addEventListener('keydown',e=>e.key==='Enter'&&doLogin());
-const NAV=[['g','Umum'],['beranda','Beranda','⌂'],['about','About','ⓘ'],['g','Data Spasial'],...Object.keys(C).map(k=>[k,C[k].t,C[k].i])];
+const NAV=[['g','Umum'],['beranda','Beranda','⌂'],['about','About','ⓘ'],['hakcipta','Hak Cipta','©'],['g','Data Spasial'],...Object.keys(C).map(k=>[k,C[k].t,C[k].i])];
 
 /* geometri */
 const parse=t=>t.trim().split(/\n\s*\n/).map(g=>g.trim().split('\n').map(l=>l.split(',').map(s=>+s.trim())).filter(a=>a.length>=2&&!a.some(isNaN)).map(([a,b])=>[b,a])).filter(g=>g.length);
@@ -203,10 +208,10 @@ const sc=s=>s==='Selesai'?'tag s':s==='Draft'?'tag d':'tag';
 /* router */
 let M=null,cur='';
 function route(){
-  const[k,did]=(location.hash||'#beranda').slice(1).split('/');DET=null;cur=C[k]?k:(k==='about'?'about':'beranda');
+  const[k,did]=(location.hash||'#beranda').slice(1).split('/');DET=null;cur=C[k]?k:(k==='about'||k==='hakcipta'?k:'beranda');
   $('#nav').innerHTML=NAV.map(n=>n[0]==='g'?`<div class="grp">${n[1]}</div>`:`<a href="#${n[0]}" class="${n[0]===cur?'on':''}"><i>${n[2]}</i>${n[1]}</a>`).join('');
   $('#side').classList.remove('open');draft=null;pin=null;dShapes=dMarks=null;if(M){M.remove();M=null}
-  $('#main').innerHTML=cur==='beranda'?home():cur==='about'?about():did?detailPage(cur,did):crudPage(cur);
+  $('#main').innerHTML=cur==='beranda'?home():cur==='about'?about():cur==='hakcipta'?hakcipta():did?detailPage(cur,did):crudPage(cur);
   if(DET)initDetail();else if(C[cur])initMap();window.scrollTo(0,0);
 }
 addEventListener('hashchange',()=>ready&&route());
@@ -262,6 +267,25 @@ function about(){
    <tr><td>Bagaimana bentuk permukaan tanahnya?</td><td>TIN</td><td>Model permukaan</td></tr></table></div>
   <div class="card" style="margin-top:14px"><h2>Teknologi</h2><div class="chips">${['Leaflet','Turf.js','PostGIS','Supabase','Esri Satelit','NASA GIBS','docx','jsPDF','Vercel'].map(c=>`<span class="chip">${c}</span>`).join('')}</div></div>
   <p style="margin-top:14px">Catatan: citra satelit resolusi tinggi diperbarui berkala, bukan realtime. Citra harian NASA tersedia dengan resolusi lebih kasar.</p>`;
+}
+function hakcipta(){
+  const L=[['in','LinkedIn','irliantarizkiawan','https://www.linkedin.com/in/irliantarizkiawan/'],
+    ['IG','Instagram','@irrzkiwnn','https://www.instagram.com/irrzkiwnn/'],
+    ['f','Facebook','Buka profil Facebook','https://www.facebook.com/share/1Kge593N7u/?mibextid=wwXIfr'],
+    ['@','Email','irliantar@gmail.com','mailto:irliantar@gmail.com'],
+    ['↗','Website Portofolio','Lihat karya lainnya','https://portofolio-irlianta-1kez3w9cz-irlianta-rizkiawans-projects.vercel.app/']];
+  return`<div class="eyebrow">Hak Cipta</div><h1>Tentang pembuat</h1>
+  <div class="card who2" style="padding:28px;margin:16px 0 22px"><img class="ava" src="img/irlianta.jpg" alt="Foto Irlianta Rizkiawan">
+   <div><div class="eyebrow">Website ini dibuat oleh</div><h1 style="margin:2px 0 4px">IRLIANTA RIZKIAWAN</h1>
+   <div class="g" style="font-weight:600;margin-bottom:10px">Lulusan S1 Teknik Informatika · Universitas Muhammadiyah Pontianak</div>
+   <p style="max-width:660px;margin:0;color:#cfd6cf">Lulusan S1 Teknik Informatika Universitas Muhammadiyah Pontianak yang memiliki kombinasi keahlian teknis mendalam di bidang pengembangan perangkat lunak, analisis data, sistem informasi geografis (GIS), serta kreativitas dalam bidang multimedia dan desain visual. Berorientasi pada solusi berbasis teknologi dengan kemampuan adaptasi yang tinggi untuk menyelesaikan berbagai tantangan proyek digital maupun industri.</p></div></div>
+  <div class="grid g2 geo2"><div class="card"><h2>Tujuan pembuatan WebGIS</h2><p>GeoLahan dibuat dengan dua tujuan:</p><ol style="color:#cfd6cf">
+   <li><b style="color:var(--tx)">Alat bantu pelaporan pembukaan lahan.</b> Admin dapat mencatat lahan, mengukur luas (m² dan hektar), menyimpan foto lapangan, dan membuat laporan Word dan PDF dari peta.</li>
+   <li><b style="color:var(--tx)">Portofolio di bidang pemetaan.</b> Website ini menunjukkan kemampuan GIS (peta satelit, pengukuran spasial, basis data PostGIS), pengembangan web penuh (autentikasi, database, penyimpanan foto, deployment di Vercel), dan perancangan antarmuka.</li></ol></div>
+  <div class="card white"><h2>Hak cipta</h2><p><b style="color:var(--k)">© 2026 Irlianta Rizkiawan.</b> Seluruh hak cipta dilindungi. Desain, kode, dan isi website ini tidak boleh disalin, didistribusikan, atau digunakan ulang tanpa izin tertulis dari pembuat.</p>
+   <p style="margin:0;font-size:12px">Peta dasar © Esri dan © OpenStreetMap contributors. Citra harian NASA GIBS. Pustaka pihak ketiga (Leaflet, Turf.js, Supabase, docx, jsPDF) tunduk pada lisensinya masing-masing.</p></div></div>
+  <h2 style="margin-top:22px">Hubungi dan lihat karya</h2>
+  <div class="grid g3">${L.map(l=>`<a class="card mod sl" href="${l[3]}" target="_blank" rel="noopener"><div class="ic">${l[0]}</div><div><b>${l[1]}</b><span>${l[2]}</span></div></a>`).join('')}</div>`;
 }
 function crudPage(k){
   return`<div class="ph"><div><div class="eyebrow">Data Spasial</div><h1>${C[k].i} ${C[k].t}</h1><p>${C[k].d}</p></div><button class="pri" onclick="startDraw()">+ Gambar di peta</button></div>
